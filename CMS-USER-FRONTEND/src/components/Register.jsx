@@ -44,8 +44,8 @@ const Register = () => {
             setMessage('User registered successfully');
             history.push('/');
         } catch (error) {
-            console.error('Registration failed', error);
-            setMessage('Registration failed');
+            console.log('Registration failed', error);
+            setMessage(error.response.data.message);
         }
     };
 

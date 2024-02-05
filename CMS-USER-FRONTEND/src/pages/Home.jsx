@@ -491,7 +491,7 @@ function RcdMsg(parsedMessage){
                     <div className="col-12 col-sm-4">
                       <div className="container mt-3">
                         <h2 className="card-title">Recharge Wallet</h2>
-                        <form action="/pay" method="get" className="d-flex flex-column">
+                        <form action="http://122.166.210.142:8052/pay" method="get" className="d-flex flex-column">
                           <div className="d-flex justify-content-center">
                             <button type="submit" value="500" name="amount" className="button-45 mr-2">Rs.500</button>
                             <button type="submit" value="1000" name="amount" className="button-45 mr-2">Rs.1000</button>

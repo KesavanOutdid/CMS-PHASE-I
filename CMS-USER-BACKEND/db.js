@@ -1,6 +1,6 @@
 const { MongoClient } = require('mongodb');
 
-const url = 'mongodb://127.0.0.1:27017';
+const url = 'mongodb+srv://outdid:outdid@cluster0.t16a63a.mongodb.net/';
 const dbName = 'ev_admin';
 let client;
 

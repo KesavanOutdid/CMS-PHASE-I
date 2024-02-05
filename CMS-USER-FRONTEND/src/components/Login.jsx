@@ -27,7 +27,7 @@ import { Link } from 'react-router-dom';
         }
     
         try {
-            const response = await fetch('http://192.168.1.70:8052/CheckLoginCredentials', {
+            const response = await fetch('/CheckLoginCredentials', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

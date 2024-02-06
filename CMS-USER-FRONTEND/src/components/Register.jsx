@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useHistory, Link } from 'react-router-dom'; // Import useHistory and Link
+import { useHistory, Link } from 'react-router-dom';
 
 const Register = () => {
     const [registerUsername, setUserName] = useState('');
@@ -9,8 +9,9 @@ const Register = () => {
     const [message, setMessage] = useState('');
     const history = useHistory();
 
+	// Register new user 
 	const handleRegister = async (e) => {
-        e.preventDefault(); // Prevent the default form submission behavior
+        e.preventDefault(); 
 
 		// Validation for user name
 		const formattedUsername = registerUsername.replace(/\s+/g, '_');
@@ -49,6 +50,7 @@ const Register = () => {
         }
     };
 
+    // Alert message clocse
 	const closeAlert = () => {
         setMessage(false);
     };
@@ -101,10 +103,10 @@ const Register = () => {
 			</div>
 			{/* Alert message */}
 			{message && (
-                <div className="alert alert-warning alert-dismissible fade show alert-container" role="alert" style={{width:'500px', textAlign:'center'}}>
-					<strong><p>{message}</p></strong> 
+                <div className="alert alert-warning alert-dismissible fade show alert-container" role="alert">
+					<strong>{message}</strong> 
 					<button type="button" className="close" data-dismiss="alert" aria-label="Close" onClick={closeAlert} style={{top:'7px'}}>
-					    <span aria-hidden="true">&times;</span>
+						<span aria-hidden="true">&times;</span>
 					</button>
 			    </div>
             )}

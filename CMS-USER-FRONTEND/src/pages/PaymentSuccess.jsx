@@ -5,9 +5,9 @@ import Cookies from 'js-cookie';
 const PaymentSuccess  = () => {
   const [paymentMessage, setPaymentMessage] = useState('');
 
+  // Payment success message 
   useEffect(() => {
     const message = Cookies.get('message');
-    console.log('Message:', message);
     setPaymentMessage(message);
   }, []);
 

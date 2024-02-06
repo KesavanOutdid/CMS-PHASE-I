@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-//import axios from 'axios';
 import { Link } from 'react-router-dom';
 
   const Login = ({ handleLogin }) => {
@@ -7,6 +6,7 @@ import { Link } from 'react-router-dom';
     const [loginPassword, setPassword] = useState('');
     const [message, setMessage] = useState('');
     
+    // Check login credentials
     const handleLoginRequest = async (e) => {
         e.preventDefault();
     
@@ -47,6 +47,7 @@ import { Link } from 'react-router-dom';
         }
     };
 
+    // Alert message clocse
     const closeAlert = () => {
         setMessage(false);
     };
@@ -89,8 +90,8 @@ import { Link } from 'react-router-dom';
             </div>
             {/* Alert message */}
             {message && (
-                <div className="alert alert-warning alert-dismissible fade show alert-container" role="alert" style={{width:'500px', textAlign:'center'}}>
-                    <strong><p>{message}</p></strong>
+                <div className="alert alert-warning alert-dismissible fade show alert-container" role="alert">
+                    <strong>{message}</strong> 
                     <button type="button" className="close" data-dismiss="alert" aria-label="Close" onClick={closeAlert} style={{top:'7px'}}>
                         <span aria-hidden="true">&times;</span>
                     </button>

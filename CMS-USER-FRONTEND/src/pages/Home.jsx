@@ -9,7 +9,14 @@ const Home = ({ userInfo, handleLogout }) => {
   const [searchChargerID, setChargerID] = useState('');
   const [ChargerID, setSearchChargerID] = useState('');
   const Username = userInfo.username;
- 
+  
+  // Show error history (toggle button) 
+  const [isTableVisible, setIsTableVisible] = useState(false);
+  const toggleTableVisibility = () => {
+    setIsTableVisible(!isTableVisible);
+  };
+
+  // Get user wallet balance
   const fetchWallletBal = async (username) => {
     try {
       const response = await fetch(`/GetWalletBalance?username=${username}`);
@@ -141,14 +148,11 @@ const Home = ({ userInfo, handleLogout }) => {
         } else {
           console.error(`Failed to fetch status. Status code: ${response.status}`);
         }
-      } catch (error) {
+    } catch (error) {
         console.error(`Error while fetching status: ${error.message}`);
-      }
-    };
-  
-
+    }
+  };
  
-
   const [socket, setSocket] = useState(null);
 
   // Effect to handle WebSocket connection
@@ -177,7 +181,6 @@ const Home = ({ userInfo, handleLogout }) => {
       // Set the socket state
       setSocket(newSocket);
     }
-
     // Cleanup function to close the WebSocket when the component is unmounted
     return () => {
       if (socket) {
@@ -187,12 +190,13 @@ const Home = ({ userInfo, handleLogout }) => {
     };
   }, [ChargerID, socket]);
 
-function RcdMsg(parsedMessage){
-  let ChargerStatus;
-      let CurrentTime;
-      let errorCode;
-      let user = Username;
-      const { DeviceID, message } = parsedMessage;
+  // WebSocket event listener message (all data)
+  function RcdMsg(parsedMessage){
+    let ChargerStatus;
+    let CurrentTime;
+    let errorCode;
+    let user = Username;
+    const { DeviceID, message } = parsedMessage;
       if (DeviceID === ChargerID) {
         switch (message[2]) {
           case 'StatusNotification':
@@ -216,63 +220,63 @@ function RcdMsg(parsedMessage){
             } else {
               setCheckFault(false);
             }
-            break;
-
-        case 'Heartbeat':
-          CurrentTime = getCurrentTime();
-          setTimestamp(CurrentTime);
-        break;
-
-        case 'MeterValues':
-          const meterValues = message[3].meterValue;
-          const sampledValue = meterValues[0].sampledValue;
-          const formattedJson = convertToFormattedJson(sampledValue);
-
-          // You can use state to store these values and update the state
-          const updatedValues = {
-            voltage: formattedJson['Voltage'],
-            current: formattedJson['Current.Import'],
-            power: formattedJson['Power.Active.Import'],
-            energy: formattedJson['Energy.Active.Import.Register'],
-            frequency: formattedJson['Frequency'],
-            temperature: formattedJson['Temperature'],
-          };
-          setChargerStatus('Charging');
-          setTimestamp(getCurrentTime());
-          setVoltage(updatedValues.voltage);
-          setCurrent(updatedValues.current);
-          setPower(updatedValues.power);
-          setEnergy(updatedValues.energy);
-          setFrequency(updatedValues.frequency);
-          setTemperature(updatedValues.temperature);
-            console.log(`{ "V": ${updatedValues.voltage},"A": ${updatedValues.current},"W": ${updatedValues.power},"Wh": ${updatedValues.energy},"Hz": ${updatedValues.frequency},"Kelvin": ${updatedValues.temperature}}`);
-        break;
-
-        case 'Authorize':
-          if (checkFault === false) {
-            ChargerStatus = 'Authorized';
-          }
-          CurrentTime = getCurrentTime();
-        break;
-
-        case 'FirmwareStatusNotification':
-          ChargerStatus = message[3].status.toUpperCase();
-        break;
-
-        case 'StopTransaction':
-          ChargerStatus = 'Finishing';
-          CurrentTime = getCurrentTime();
-          setTimeout(function () {
-            updateSessionPriceToUser(ChargerID, user);
-          }, 5000);
-        break;
-
-        case 'Accepted':
-          ChargerStatus = 'ChargerAccepted';
-          CurrentTime = getCurrentTime();
           break;
+
+          case 'Heartbeat':
+            CurrentTime = getCurrentTime();
+            setTimestamp(CurrentTime);
+          break;
+
+          case 'MeterValues':
+            const meterValues = message[3].meterValue;
+            const sampledValue = meterValues[0].sampledValue;
+            const formattedJson = convertToFormattedJson(sampledValue);
+
+            // You can use state to store these values and update the state
+            const updatedValues = {
+              voltage: formattedJson['Voltage'],
+              current: formattedJson['Current.Import'],
+              power: formattedJson['Power.Active.Import'],
+              energy: formattedJson['Energy.Active.Import.Register'],
+              frequency: formattedJson['Frequency'],
+              temperature: formattedJson['Temperature'],
+            };
+            setChargerStatus('Charging');
+            setTimestamp(getCurrentTime());
+            setVoltage(updatedValues.voltage);
+            setCurrent(updatedValues.current);
+            setPower(updatedValues.power);
+            setEnergy(updatedValues.energy);
+            setFrequency(updatedValues.frequency);
+            setTemperature(updatedValues.temperature);
+              console.log(`{ "V": ${updatedValues.voltage},"A": ${updatedValues.current},"W": ${updatedValues.power},"Wh": ${updatedValues.energy},"Hz": ${updatedValues.frequency},"Kelvin": ${updatedValues.temperature}}`);
+          break;
+
+          case 'Authorize':
+            if (checkFault === false) {
+              ChargerStatus = 'Authorized';
+            }
+            CurrentTime = getCurrentTime();
+          break;
+
+          case 'FirmwareStatusNotification':
+            ChargerStatus = message[3].status.toUpperCase();
+          break;
+
+          case 'StopTransaction':
+            ChargerStatus = 'Finishing';
+            CurrentTime = getCurrentTime();
+            setTimeout(function () {
+              updateSessionPriceToUser(ChargerID, user);
+            }, 5000);
+          break;
+
+          case 'Accepted':
+            ChargerStatus = 'ChargerAccepted';
+            CurrentTime = getCurrentTime();
+          break;
+        }
       }
-    }
     if (ChargerStatus) {
       AppendStatusTime(ChargerStatus, CurrentTime);
     }
@@ -449,6 +453,7 @@ function RcdMsg(parsedMessage){
           </ul>
         </div>
       </nav>
+
       {/* Container for Page welcome session start */}
       <div className="container mt-4">
         <div className="col-md-12">

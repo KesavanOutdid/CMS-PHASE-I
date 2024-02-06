@@ -54,6 +54,11 @@ const Home = ({ userInfo, handleLogout }) => {
     document.getElementById('backSection').style.display = 'none';
   }
 
+  const [errorData, setShowAlerts] = useState(false);
+  const closeAlert = () => {
+    setShowAlerts(false);
+  };
+
   const handleSearchRequest = async (e) => {
     e.preventDefault();
     try {
@@ -79,8 +84,8 @@ const Home = ({ userInfo, handleLogout }) => {
           setIsTableVisible(false);
         } else {
           const errorData = await response.json();
-          alert(errorData.message);
- 
+          // alert(errorData.message);
+          setShowAlerts(errorData);
           // Show Search Box Section and hide Status Section
           document.getElementById('searchBoxSection').style.display = 'block';
           document.getElementById('statusSection').style.display = 'none';
@@ -460,7 +465,7 @@ function RcdMsg(parsedMessage){
                   <strong>Welcome </strong> <span className="text-primary">{Username},</span>
                 </h2>
               </div>
-              <div className="col-md-6 mb-2 border-right pr-3">
+              <div className="col-md-6 mb-2 pr-3">
                 <button type="submit" className=" button-90 float-end" id="backSection" style={{ display: 'none' }} onClick={handleSearchBox}>Back</button>
               </div>
             </div>
@@ -497,7 +502,7 @@ function RcdMsg(parsedMessage){
                             <button type="submit" value="1000" name="amount" className="button-45 mr-2">Rs.1000</button>
                             <button type="submit" value="2000" name="amount" className="button-45">Rs.2000</button>
                           </div>
-                          <input type="text" name="RCuser" value={Username} style={{ display: 'none' }} />
+                          <input type="text" name="RCuser" value={Username} style={{ display: 'none' }} readOnly/>
                         </form>
                       </div>
                     </div>
@@ -731,27 +736,41 @@ function RcdMsg(parsedMessage){
         {/* Charger status Section stop*/}
         {/* Alert charger update Session Price To User start*/}
         <div>
-      {/* Your API call logic and setApiData usage go here */}
-
-      {/* Alert Box */}
-      {showAlert && (
-        <div className="alert-overlay">
-          <div className="alert success" style={{width:'500px'}}>
-            <span className="alertClose" onClick={handleCloseAlert}>X</span>
-            <span className="alertText"><p><strong>ChargerID:</strong> {chargingSession.ChargerID}</p></span>
-            <span className="alertText"><p><strong>Start Time:</strong> {chargingSession.StartTimestamp}</p></span>
-            <span className="alertText"><p><strong>Stop Time:</strong> {chargingSession.StopTimestamp}</p></span>
-            <span className="alertText"><p><strong>Unit Consumed:</strong> {chargingSession.Unitconsumed}</p></span>
-            <span className="alertText"><p><strong>Charging Price:</strong> {chargingSession.price}</p></span>
-            <span className="alertText"><p><strong>Available Balance:</strong> {updatedUser.walletBalance}</p></span>
+        {/* Your API call logic and setApiData usage go here */}
+        {/* Alert Box */}
+        {showAlert && (
+          <div className="alert-overlay">
+            <div className="alert success" style={{width:'500px'}}>
+              <span className="alertClose" onClick={handleCloseAlert}>X</span>
+              <span className="alertText"><p><strong>ChargerID:</strong> {chargingSession.ChargerID}</p></span>
+              <span className="alertText"><p><strong>Start Time:</strong> {chargingSession.StartTimestamp}</p></span>
+              <span className="alertText"><p><strong>Stop Time:</strong> {chargingSession.StopTimestamp}</p></span>
+              <span className="alertText"><p><strong>Unit Consumed:</strong> {chargingSession.Unitconsumed}</p></span>
+              <span className="alertText"><p><strong>Charging Price:</strong> {chargingSession.price}</p></span>
+              <span className="alertText"><p><strong>Available Balance:</strong> {updatedUser.walletBalance}</p></span>
+            </div>
           </div>
+        )}
+        {/* Rest of your component */}
         </div>
-      )}
-
-      {/* Rest of your component */}
-    </div>
         {/* Alert charger update Session Price To User stop*/}
       </div>
+        {/* Alert message */}
+        {errorData && (
+          // <div className="alert-overlay" style={{textAlign:'center'}}>
+          //   <div className="alert success" style={{width:'500px', backgroundColor:'#ffeeba', borderRadius:'10px'}}>
+          //     <span className="alertClose" onClick={closeAlert}>X</span>
+          //     <span className="alertText"><h6>{errorData.message}</h6></span>
+          //   </div>
+          // </div>
+          <div class="alert alert-warning alert-dismissible fade show alert-container" role="alert" style={{width:'500px', textAlign:'center'}}>
+            <strong>{errorData.message}</strong> 
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close" onClick={closeAlert} style={{top:'7px'}}>
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+        )}
+        {/* Alert message  */}
     </div>
   );
 };

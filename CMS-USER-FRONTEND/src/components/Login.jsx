@@ -17,7 +17,7 @@ import { Link } from 'react-router-dom';
         const passwordPattern = /^\d{4}$/;
     
         if (processedLoginUsername !== loginUsername) {
-            setMessage('User Name should not contain spaces, eg: Kesav_D , kesav_d.');
+            setMessage('User Name should not contain spaces,eg: kesav_d');
             return;
         }
     
@@ -46,6 +46,10 @@ import { Link } from 'react-router-dom';
             setMessage('An error occurred during login. Please try again later.');
         }
     };
+
+    const closeAlert = () => {
+        setMessage(false);
+    };
   
     return (
         <section className="h-100">
@@ -70,30 +74,17 @@ import { Link } from 'react-router-dom';
                                         <input type="password" className="form-control" value={loginPassword} onChange={(e) => setPassword(e.target.value)} required />
                                         <div className="invalid-feedback">Password is required</div>
                                     </div>
-                                    {/* <div className="mb-3">
-                                        <label className="mb-2 text-muted" htmlFor="password">Password</label>
-                                        <input
-                                          type="password"
-                                          className={`form-control ${isValidPin(loginPassword) ? '' : 'is-invalid'}`}
-                                          value={loginPassword}
-                                          onChange={(e) => setPassword(e.target.value)}
-                                          required
-                                        />
-                                        <div className="invalid-feedback">
-                                          {isValidPin(loginPassword) ? null : 'Please enter a 4-digit numeric pin.'}
-                                        </div>
-                                      </div>*/}
 
                                     <div className="d-flex align-items-center">
                                         <button type="submit" className="btn btn-primary ms-auto">Login</button>
                                     </div> 
                                 </form>
                             </div>
-                            {message && (
+                            {/* {message && (
                                 <p className="text-danger mt-3" id="loginErrorMessage" aria-live="assertive" aria-atomic="true" aria-describedby="email" style={{textAlign:'center'}}>
                                     {message}
                                 </p>
-                            )}
+                            )} */}
                             <div className="card-footer py-3 border-0">
                                 <div className="text-center">Don't have an account? <Link to="/Register" className="text-dark">Create One</Link></div>
                             </div>
@@ -101,6 +92,19 @@ import { Link } from 'react-router-dom';
                     </div>
                 </div>
             </div>
+            {/* Alert message */}
+            {message && (
+                <div class="alert alert-warning alert-dismissible fade show alert-container" role="alert" style={{width:'500px', textAlign:'center'}}>
+                    <div><strong><p>{message}</p></strong></div> 
+                    <div>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close" onClick={closeAlert} style={{top:'7px'}}>
+                    <span aria-hidden="true">&times;</span>
+                    </button>
+                    </div>
+                    
+                </div>
+            )}
+            {/* Alert message */}
         </section>
     );
 };

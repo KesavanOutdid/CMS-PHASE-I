@@ -22,7 +22,7 @@ const Register = () => {
 		const phonePattern = /^\d{10}$/;
 	
 		if (formattedUsername !== registerUsername) {
-			setMessage('User Name should not contain spaces, eg: Kesav_D , kesav_d.');
+			setMessage('User Name should not contain spaces,eg: kesav_d');
 			return;
 		}
 	
@@ -47,6 +47,10 @@ const Register = () => {
             console.error('Registration failed', error);
             setMessage('Registration failed');
         }
+    };
+
+	const closeAlert = () => {
+        setMessage(false);
     };
 
     return (
@@ -86,11 +90,11 @@ const Register = () => {
 									</div> 
 								</form>
 							</div>
-							{message && (
+							{/* {message && (
 								<p className="text-danger mt-3" id="loginErrorMessage" aria-live="assertive" aria-atomic="true" aria-describedby="email" style={{ textAlign: 'center' }}>
 									{message}
 								</p>
-							)}					
+							)}					 */}
 							<div className="card-footer py-3 border-0">
 								<div className="text-center">
 									Already have an account? <Link to="/" className="text-dark">Login</Link>
@@ -100,6 +104,16 @@ const Register = () => {
 					</div>
 				</div>
 			</div>
+			{/* Alert message */}
+			{message && (
+                <div class="alert alert-warning alert-dismissible fade show alert-container" role="alert" style={{width:'500px', textAlign:'center'}}>
+					<strong><p>{message}</p></strong> 
+					<button type="button" class="close" data-dismiss="alert" aria-label="Close" onClick={closeAlert} style={{top:'7px'}}>
+					<span aria-hidden="true">&times;</span>
+					</button>
+			    </div>
+            )}
+			{/* Alert message */}
 		</section>
     )
 }

@@ -80,11 +80,6 @@ import { Link } from 'react-router-dom';
                                     </div> 
                                 </form>
                             </div>
-                            {/* {message && (
-                                <p className="text-danger mt-3" id="loginErrorMessage" aria-live="assertive" aria-atomic="true" aria-describedby="email" style={{textAlign:'center'}}>
-                                    {message}
-                                </p>
-                            )} */}
                             <div className="card-footer py-3 border-0">
                                 <div className="text-center">Don't have an account? <Link to="/Register" className="text-dark">Create One</Link></div>
                             </div>
@@ -94,14 +89,11 @@ import { Link } from 'react-router-dom';
             </div>
             {/* Alert message */}
             {message && (
-                <div class="alert alert-warning alert-dismissible fade show alert-container" role="alert" style={{width:'500px', textAlign:'center'}}>
-                    <div><strong><p>{message}</p></strong></div> 
-                    <div>
-                    <button type="button" class="close" data-dismiss="alert" aria-label="Close" onClick={closeAlert} style={{top:'7px'}}>
-                    <span aria-hidden="true">&times;</span>
+                <div className="alert alert-warning alert-dismissible fade show alert-container" role="alert" style={{width:'500px', textAlign:'center'}}>
+                    <strong><p>{message}</p></strong>
+                    <button type="button" className="close" data-dismiss="alert" aria-label="Close" onClick={closeAlert} style={{top:'7px'}}>
+                        <span aria-hidden="true">&times;</span>
                     </button>
-                    </div>
-                    
                 </div>
             )}
             {/* Alert message */}

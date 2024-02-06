@@ -13,19 +13,7 @@ const Home = ({ userInfo, handleLogout }) => {
   const [searchChargerID, setChargerID] = useState('');
   const [ChargerID, setSearchChargerID] = useState('');
   const Username = userInfo.username;
-  // useEffect(() => {
-  //   const fetchWallletBal = async () => {
-  //     try {
-  //       const response = await fetch(`http://192.168.1.70:8052/GetWalletBalance?username=${Username}`);
-  //       const data = await response.json();
-  //       setWalletBalance(data.balance);
-  //     } catch (error) {
-  //       console.error('Error fetching wallet balance:', error);
-  //     }
-  //   };
-
-  //   fetchWallletBal();
-  // }, [Username]);
+ 
   const fetchWallletBal = async (username) => {
     try {
       const response = await fetch(`/GetWalletBalance?username=${username}`);
@@ -71,10 +59,7 @@ const Home = ({ userInfo, handleLogout }) => {
         });
  
         if (response.ok) {
-          //const data = await response.json();
-          // console.log(data, searchChargerID);
           setSearchChargerID(searchChargerID);
-
           // Hide Search Box Section and show Status Section
           document.getElementById('searchBoxSection').style.display = 'none';
           document.getElementById('statusSection').style.display = 'block';
@@ -82,6 +67,7 @@ const Home = ({ userInfo, handleLogout }) => {
 
           // Additional logic or state updates can be added here
           setIsTableVisible(false);
+          FetchLaststatus(searchChargerID);
         } else {
           const errorData = await response.json();
           // alert(errorData.message);
@@ -130,8 +116,7 @@ const Home = ({ userInfo, handleLogout }) => {
     }
   }, [ChargerID]);
 
-  useEffect(() => {
-    const fetchLastStatus = async () => {
+    async function FetchLaststatus(ChargerID){
       try {
         const response = await fetch('/FetchLaststatus', {
           method: 'POST',
@@ -156,9 +141,9 @@ const Home = ({ userInfo, handleLogout }) => {
         console.error(`Error while fetching status: ${error.message}`);
       }
     };
+  
 
-    fetchLastStatus();
-  }, [ChargerID]);
+ 
 
   const [socket, setSocket] = useState(null);
 
@@ -757,15 +742,9 @@ function RcdMsg(parsedMessage){
       </div>
         {/* Alert message */}
         {errorData && (
-          // <div className="alert-overlay" style={{textAlign:'center'}}>
-          //   <div className="alert success" style={{width:'500px', backgroundColor:'#ffeeba', borderRadius:'10px'}}>
-          //     <span className="alertClose" onClick={closeAlert}>X</span>
-          //     <span className="alertText"><h6>{errorData.message}</h6></span>
-          //   </div>
-          // </div>
-          <div class="alert alert-warning alert-dismissible fade show alert-container" role="alert" style={{width:'500px', textAlign:'center'}}>
+          <div className="alert alert-warning alert-dismissible fade show alert-container" role="alert" style={{width:'500px', textAlign:'center'}}>
             <strong>{errorData.message}</strong> 
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close" onClick={closeAlert} style={{top:'7px'}}>
+            <button type="button" className="close" data-dismiss="alert" aria-label="Close" onClick={closeAlert} style={{top:'7px'}}>
               <span aria-hidden="true">&times;</span>
             </button>
           </div>

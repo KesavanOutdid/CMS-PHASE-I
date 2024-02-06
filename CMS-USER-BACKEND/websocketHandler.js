@@ -14,8 +14,9 @@ const handleWebSocketConnection = (WebSocket, wss, wsConnections, ClientConnecti
     wss.on('connection', async(ws, req) => {
         const uniqueIdentifier = getUniqueIdentifierFromRequest(req);
         const clientIpAddress = req.connection.remoteAddress;
+        let timeoutId;
 
-        wsConnections.set(uniqueIdentifier, ws);
+        wsConnections.set(clientIpAddress, ws);
         ClientConnections.add(ws);
         clients.set(ws, clientIpAddress);
 
@@ -138,6 +139,22 @@ const handleWebSocketConnection = (WebSocket, wss, wsConnections, ClientConnecti
 
                         let StartTimestamp;
                         let StopTimestamp;
+                        if (status == 'Available') {
+                            timeoutId = setTimeout(async() => {
+                                const result = await updateEndChargingSession(uniqueIdentifier);
+                                if (result === true) {
+                                    console.log('End charging session is updated successfully.');
+                                } else {
+                                    console.log('End charging session is not updated.');
+                                }
+                            }, 45000);
+                        } else {
+                            if (timeoutId !== undefined) {
+                                console.log('Timeout Triggered');
+                                clearTimeout(timeoutId);
+                                timeoutId = undefined; // Reset the timeout reference
+                            }
+                        }
 
                         if (status == 'Charging') {
                             charging_state = true;
@@ -172,7 +189,6 @@ const handleWebSocketConnection = (WebSocket, wss, wsConnections, ClientConnecti
                                 console.log("StartMeterValues or LastMeterValues is not available.");
                             }
                             const user = await getUsername(uniqueIdentifier);
-                            console.log(user);
                             handleChargingSession(uniqueIdentifier, StartTimestamp, StopTimestamp, unit, sessionPrice, user);
                             sessionFlag = 0;
                         }
@@ -596,6 +612,23 @@ async function updateSessionPriceToUser(user, price) {
 
     } catch (error) {
         console.error('Error in updateSessionPriceToUser:', error);
+    }
+}
+
+async function updateEndChargingSession(uniqueIdentifier) {
+    try {
+        const db = await connectToDatabase();
+        const collection = db.collection('ev_details');
+        const result = await collection.updateOne({ ChargerID: uniqueIdentifier }, { $set: { current_or_active_user: null } });
+
+        if (result.modifiedCount === 0) {
+            return false;
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Error updating end charging session:', error);
+        return false;
     }
 }
 

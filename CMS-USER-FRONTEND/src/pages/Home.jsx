@@ -10,13 +10,6 @@ const Home = ({ userInfo, handleLogout }) => {
   const [ChargerID, setSearchChargerID] = useState('');
   const Username = userInfo.username;
  
-  // Show Error History (toggle button)
-  const [isTableVisible, setIsTableVisible] = useState(false);
-  const toggleTableVisibility = () => {
-    setIsTableVisible(!isTableVisible);
-  };
-
-  // Get user wallet balance
   const fetchWallletBal = async (username) => {
     try {
       const response = await fetch(`/GetWalletBalance?username=${username}`);
@@ -32,7 +25,8 @@ const Home = ({ userInfo, handleLogout }) => {
   
  
   // Function to handle the "Back" button click
-  function handleSearchBox() {
+  async function handleSearchBox() {
+
     setChargerID('');
     setSearchChargerID('');
     // Show the searchBoxSection
@@ -41,6 +35,8 @@ const Home = ({ userInfo, handleLogout }) => {
     document.getElementById('statusSection').style.display = 'none';
     // Hide the "Back" button
     document.getElementById('backSection').style.display = 'none';
+
+    await EndChargingSession(ChargerID);
   }
 
   // Alert message
@@ -69,18 +65,16 @@ const Home = ({ userInfo, handleLogout }) => {
           document.getElementById('searchBoxSection').style.display = 'none';
           document.getElementById('statusSection').style.display = 'block';
           document.getElementById('backSection').style.display = 'block';
-          
-          // state updates
+
+          // Additional logic or state updates can be added here
           setIsTableVisible(false);
 
           // Last status
           FetchLaststatus(searchChargerID);
         } else {
           const errorData = await response.json();
-
-          // set errordata (alert)
-          setShowAlerts(errorData.message);
-
+          // alert(errorData.message);
+          setShowAlerts(errorData);
           // Show Search Box Section and hide Status Section
           document.getElementById('searchBoxSection').style.display = 'block';
           document.getElementById('statusSection').style.display = 'none';
@@ -136,23 +130,25 @@ const Home = ({ userInfo, handleLogout }) => {
         body: JSON.stringify({ id: ChargerID }),
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        const status = data.message.status;
-        const formattedTimestamp = formatTimestamp(data.message.timestamp);
+        if (response.ok) {
+          const data = await response.json();
+          const status = data.message.status;
+          const formattedTimestamp = formatTimestamp(data.message.timestamp);
 
-        setChargerStatus(status);
-        setTimestamp(formattedTimestamp);
-        AppendStatusTime(status, formattedTimestamp);
-      } else {
-        console.error(`Failed to fetch status. Status code: ${response.status}`);
+          setChargerStatus(status);
+          setTimestamp(formattedTimestamp);
+          AppendStatusTime(status, formattedTimestamp);
+        } else {
+          console.error(`Failed to fetch status. Status code: ${response.status}`);
+        }
+      } catch (error) {
+        console.error(`Error while fetching status: ${error.message}`);
       }
-    } catch (error) {
-      console.error(`Error while fetching status: ${error.message}`);
-    }
-  };
+    };
+  
 
-  // WebSocket 
+ 
+
   const [socket, setSocket] = useState(null);
 
   // Effect to handle WebSocket connection
@@ -191,38 +187,36 @@ const Home = ({ userInfo, handleLogout }) => {
     };
   }, [ChargerID, socket]);
 
-  // WebSocket event listener message   
-  function RcdMsg(parsedMessage){
-    let ChargerStatus;
-    let CurrentTime;
-    let errorCode;
-    let user = Username;
-    const { DeviceID, message } = parsedMessage;
+function RcdMsg(parsedMessage){
+  let ChargerStatus;
+      let CurrentTime;
+      let errorCode;
+      let user = Username;
+      const { DeviceID, message } = parsedMessage;
+      if (DeviceID === ChargerID) {
+        switch (message[2]) {
+          case 'StatusNotification':
+            ChargerStatus = message[3].status;
+            CurrentTime = formatTimestamp(message[3].timestamp);
+            errorCode = message[3].errorCode;
+            console.log(`ChargerID ${DeviceID}: {"status": "${ChargerStatus}","time": "${CurrentTime}","error": "${errorCode}"}`);
 
-    if (DeviceID === ChargerID) {
-      switch (message[2]) {
-        case 'StatusNotification':
-          ChargerStatus = message[3].status;
-          CurrentTime = formatTimestamp(message[3].timestamp);
-          errorCode = message[3].errorCode;
-          console.log(`ChargerID ${DeviceID}: {"status": "${ChargerStatus}","time": "${CurrentTime}","error": "${errorCode}"}`);
-
-          // Update state variables to maintain the history
-          if (errorCode !== 'NoError') {
-            setHistory((historys) => [
-              ...historys,
-              {
-                serialNumber: historys.length + 1,
-                currentTime: CurrentTime,
-                chargerStatus: ChargerStatus,
-                errorCode: errorCode,
-              },
-            ]);
-            setCheckFault(true);
-          } else {
-            setCheckFault(false);
-          }
-        break;
+            // Update state variables to maintain the history
+            if (errorCode !== 'NoError') {
+              setHistory((historys) => [
+                ...historys,
+                {
+                  serialNumber: historys.length + 1,
+                  currentTime: CurrentTime,
+                  chargerStatus: ChargerStatus,
+                  errorCode: errorCode,
+                },
+              ]);
+              setCheckFault(true);
+            } else {
+              setCheckFault(false);
+            }
+            break;
 
         case 'Heartbeat':
           CurrentTime = getCurrentTime();
@@ -322,7 +316,7 @@ const Home = ({ userInfo, handleLogout }) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ id: ChargerID }),
+        body: JSON.stringify({ id: ChargerID, user: Username }),
       });
 
       if (response.status === 200) {
@@ -394,7 +388,8 @@ const Home = ({ userInfo, handleLogout }) => {
         setChargerID('');
         document.getElementById('searchBoxSection').style.display = 'block';
         document.getElementById('statusSection').style.display = 'none';
-        fetchWallletBal(Username);
+        await fetchWallletBal(Username);
+        await EndChargingSession(Username);
       } else {
         // Log or handle error
         console.error('Update failed:', response.statusText);
@@ -749,8 +744,8 @@ const Home = ({ userInfo, handleLogout }) => {
       
         {/* Alert message box start */}
         {errorData && (
-          <div className="alert alert-warning alert-dismissible fade show alert-container" role="alert">
-            <strong>{errorData}</strong> 
+          <div className="alert alert-warning alert-dismissible fade show alert-container" role="alert" style={{width:'500px', textAlign:'center'}}>
+            <strong>{errorData.message}</strong> 
             <button type="button" className="close" data-dismiss="alert" aria-label="Close" onClick={closeAlert} style={{top:'7px'}}>
               <span aria-hidden="true">&times;</span>
             </button>

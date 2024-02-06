@@ -129,13 +129,14 @@ router.post('/FetchLaststatus', async(req, res) => {
 });
 
 //start the charger
-router.post('/start', (req, res) => {
-    const parsedUrl = url.parse(req.url, true);
-    const queryParams = parsedUrl.query;
+router.post('/start', async(req, res) => {
+    // const parsedUrl = url.parse(req.url, true);
+    // const queryParams = parsedUrl.query;
     const id = req.body.id;
 
-    const deviceIDToSendTo = id;
-    const wsToSendTo = wsConnections.get(deviceIDToSendTo);
+    //const deviceIDToSendTo = id;
+    const ip = await getIp(id);
+    const wsToSendTo = wsConnections.get(ip);
 
     if (wsToSendTo) {
         const remoteStartRequest = [2, "1695798668459", "RemoteStartTransaction", {
@@ -148,55 +149,54 @@ router.post('/start', (req, res) => {
 
         wsToSendTo.send(JSON.stringify(remoteStartRequest));
 
-        console.log('StartCharger message sent to the WebSocket client for device ID:', deviceIDToSendTo);
-        res.status(200).json({ message: `StartCharger message sent to the WebSocket client for device ID: ${deviceIDToSendTo}` });
+        console.log('StartCharger message sent to the WebSocket client for device ID:', id);
+        res.status(200).json({ message: `StartCharger message sent to the WebSocket client for device ID: ${id}` });
         //res.end('StartCharger message sent to the WebSocket client for device ID: ' + deviceIDToSendTo);
     } else {
         // Charger ID Not Found/Available
-        console.log('WebSocket client not found in start charger device ID:', deviceIDToSendTo);
+        console.log('WebSocket client not found in start charger device ID:', id);
         res.status(404).json({ message: `ChargerID not available in the WebSocket client devcieID: deviceIDToSendTo` });
     }
 });
 
 //stop the charger
 router.post('/stop', async(req, res) => {
-    const parsedUrl = url.parse(req.url, true);
-    const queryParams = parsedUrl.query;
+    // const parsedUrl = url.parse(req.url, true);
+    // const queryParams = parsedUrl.query;
     const id = req.body.id;
-    console.log(id);
-
+    const ip = await getIp(id);
     // Specify the device ID you want to send the message to
-    const deviceIDToSendTo = id;
+    //const deviceIDToSendTo = id;
     const db = await database.connectToDatabase();
 
-    await db.collection('ev_details').findOne({ ChargerID: deviceIDToSendTo })
+    await db.collection('ev_details').findOne({ ChargerID: id })
         .then(transData => {
             if (transData) {
-                const wsToSendTo = wsConnections.get(deviceIDToSendTo);
+                const wsToSendTo = wsConnections.get(ip);
                 if (wsToSendTo) {
                     const transId = transData.transactionId;
                     const remoteStopRequest = [2, "1695798668459", "RemoteStopTransaction", { "transactionId": transId }];
                     wsToSendTo.send(JSON.stringify(remoteStopRequest));
 
-                    console.log('Stop message sent to the WebSocket client for device ID:', deviceIDToSendTo);
-                    logger.info('Stop message sent to the WebSocket client for device ID:', deviceIDToSendTo);
-                    res.status(200).json({ message: `Stop message sent to the WebSocket client for device ID: ${deviceIDToSendTo}` });
+                    console.log('Stop message sent to the WebSocket client for device ID:', id);
+                    logger.info('Stop message sent to the WebSocket client for device ID:', id);
+                    res.status(200).json({ message: `Stop message sent to the WebSocket client for device ID: ${id}` });
                     //res.end('Stop message sent to the WebSocket client for device ID: ' + deviceIDToSendTo);
                 } else {
-                    console.log('WebSocket client not found in stop charger device ID:', deviceIDToSendTo);
-                    logger.info('WebSocket client not found in stop charger device ID:', deviceIDToSendTo);
-                    res.status(404).json({ message: `ChargerID not available in the WebSocket client deviceID: ${deviceIDToSendTo}` });
+                    console.log('WebSocket client not found in stop charger device ID:', id);
+                    logger.info('WebSocket client not found in stop charger device ID:', id);
+                    res.status(404).json({ message: `ChargerID not available in the WebSocket client deviceID: ${id}` });
                 }
             } else {
-                console.log(`ID: ${deviceIDToSendTo} - TransactionID/ChargerID not set or not available !`);
-                logger.error(`ID: ${deviceIDToSendTo} - TransactionID/ChargerID not set or not available !`);
-                res.status(404).json({ message: `ID: ${deviceIDToSendTo} - TransactionID/ChargerID not set or not available !` });
+                console.log(`ID: ${id} - TransactionID/ChargerID not set or not available !`);
+                logger.error(`ID: ${id} - TransactionID/ChargerID not set or not available !`);
+                res.status(404).json({ message: `ID: ${id} - TransactionID/ChargerID not set or not available !` });
             }
         })
         .catch(error => {
-            console.log(`ChargerID: ${deviceIDToSendTo} - Transaction ID not set or not available: ${error}`);
-            logger.error(`ChargerID: ${deviceIDToSendTo} - Transaction ID not set or not available: ${error}`);
-            res.status(400).json({ message: `ChargerID: ${deviceIDToSendTo} - Transaction ID not set or not available: ${error}` });
+            console.log(`ChargerID: ${id} - Transaction ID not set or not available: ${error}`);
+            logger.error(`ChargerID: ${id} - Transaction ID not set or not available: ${error}`);
+            res.status(400).json({ message: `ChargerID: ${id} - Transaction ID not set or not available: ${error}` });
             //res.end(`ChargerID: ${deviceIDToSendTo} - Transaction ID not set or not available: ${error}`);
         });
 });
@@ -207,8 +207,6 @@ router.post('/getUpdatedCharingDetails', async(req, res) => {
         const queryParams = parsedUrl.query;
         const chargerID = req.body.chargerID;
         const user = req.body.user;
-        console.log(chargerID, user);
-
         const db = await database.connectToDatabase();
         const chargingSessionResult = await db.collection('charging_session')
             .find({ ChargerID: chargerID, user: user })
@@ -241,7 +239,6 @@ router.get('/pay', async function(req, res, next) {
         const RCamt = parseInt(req.query.amount);
         let result = RCamt * 100;
         let tx_uuid = uniqid();
-        console.log(RCamt);
         let normalPayLoad = {
             "merchantId": process.env.merchantId,
             "merchantTransactionId": tx_uuid,
@@ -302,7 +299,6 @@ router.all('/pay-return-url', async function(req, res) {
                     'accept': 'application/json'
                 }
             }).then(async function(response) {
-                console.log(response.data);
                 const result = await savePaymentDetails(response.data, user);
                 if (result === true) {
                     //res.cookie('message', 'Recharge successful');
@@ -364,7 +360,6 @@ router.get('/GetAllChargerDetails', async function(req, res) {
         const db = await database.connectToDatabase();
         const chargerDetailsCursor = await db.collection('ev_details').find({});
         const GetAllChargerDetails = await chargerDetailsCursor.toArray();
-        console.log(GetAllChargerDetails);
         if (GetAllChargerDetails) {
             console.log(`GetAllChargerDetails successful`);
             res.status(200).json({ message: 'success', value: GetAllChargerDetails });
@@ -377,6 +372,24 @@ router.get('/GetAllChargerDetails', async function(req, res) {
         res.status(500).send({ message: 'Internal Server Error' });
     }
 });
+
+async function getIp(chargerID) {
+    try {
+        const db = await database.connectToDatabase();
+        const getip = await db.collection('ev_details').findOne({ ChargerID: chargerID });
+        const ip = getip.ip;
+        if (getip) {
+            console.log(`GetIP successful`);
+            return ip;
+        } else {
+            console.log(`GetIP Unsuccessful`);
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: 'Internal Server Error' });
+    }
+
+}
 
 // Export the router
 module.exports = router;

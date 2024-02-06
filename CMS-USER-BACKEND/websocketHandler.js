@@ -15,7 +15,7 @@ const handleWebSocketConnection = (WebSocket, wss, wsConnections, ClientConnecti
         const uniqueIdentifier = getUniqueIdentifierFromRequest(req);
         const clientIpAddress = req.connection.remoteAddress;
 
-        wsConnections.set(uniqueIdentifier, ws);
+        wsConnections.set(clientIpAddress, ws);
         ClientConnections.add(ws);
         clients.set(ws, clientIpAddress);
 
@@ -172,7 +172,6 @@ const handleWebSocketConnection = (WebSocket, wss, wsConnections, ClientConnecti
                                 console.log("StartMeterValues or LastMeterValues is not available.");
                             }
                             const user = await getUsername(uniqueIdentifier);
-                            console.log(user);
                             handleChargingSession(uniqueIdentifier, StartTimestamp, StopTimestamp, unit, sessionPrice, user);
                             sessionFlag = 0;
                         }

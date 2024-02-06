@@ -34,7 +34,7 @@ const registerUser = async(req, res, next) => {
         // Check if the username is already taken
         const existingUser = await usersCollection.findOne({ username: registerUsername });
         if (existingUser) {
-            const errorMessage = 'You are already registerd';
+            const errorMessage = 'Username already registered with us !';
             return res.status(403).json({ message: errorMessage });
         }
 

@@ -37,15 +37,15 @@ const Register = () => {
 		}
 
         try {
-            const response = await axios.post('http://192.168.1.70:8052/RegisterNewUser', {
+            const response = await axios.post('/RegisterNewUser', {
                 registerUsername: formattedUsername, registerPhone, registerPassword,
             });
             console.log(response.data); // Use console.log for debugging
             setMessage('User registered successfully');
             history.push('/');
         } catch (error) {
-            console.error('Registration failed', error);
-            setMessage('Registration failed');
+            console.log('Registration failed', error);
+            setMessage(error.response.data.message);
         }
     };
 

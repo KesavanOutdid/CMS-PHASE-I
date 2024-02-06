@@ -28,7 +28,7 @@ const Home = ({ userInfo, handleLogout }) => {
   // }, [Username]);
   const fetchWallletBal = async (username) => {
     try {
-      const response = await fetch(`http://192.168.1.70:8052/GetWalletBalance?username=${username}`);
+      const response = await fetch(`/GetWalletBalance?username=${username}`);
       const data = await response.json();
       setWalletBalance(data.balance);
     } catch (error) {
@@ -62,7 +62,7 @@ const Home = ({ userInfo, handleLogout }) => {
   const handleSearchRequest = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://192.168.1.70:8052/SearchCharger', {
+      const response = await fetch('/SearchCharger', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -133,7 +133,7 @@ const Home = ({ userInfo, handleLogout }) => {
   useEffect(() => {
     const fetchLastStatus = async () => {
       try {
-        const response = await fetch('http://192.168.1.70:8052/FetchLaststatus', {
+        const response = await fetch('/FetchLaststatus', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -321,7 +321,7 @@ function RcdMsg(parsedMessage){
    // start button
    const handleStartTransaction = async () => {
     try {
-      const response = await fetch('http://192.168.1.70:8052/start', {
+      const response = await fetch('/start', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -342,7 +342,7 @@ function RcdMsg(parsedMessage){
   // stop button
   const handleStopTransaction = async () => {
     try {
-      const response = await fetch('http://192.168.1.70:8052/stop', {
+      const response = await fetch('/stop', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -376,7 +376,7 @@ function RcdMsg(parsedMessage){
 
   const updateSessionPriceToUser = async (ChargerID, user) => {
     try {
-      const response = await fetch('http://192.168.1.70:8052/getUpdatedCharingDetails', {
+      const response = await fetch('/getUpdatedCharingDetails', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -424,7 +424,7 @@ function RcdMsg(parsedMessage){
   // Get table data
   useEffect(() => {
     // Define the API URL based on the event detail
-    const url = `http://192.168.1.70:8052/GetAllChargerDetails`;
+    const url = `/GetAllChargerDetails`;
     axios.get(url).then((res) => {
         setData(res.data.value);
         setLoading(false);
@@ -496,7 +496,7 @@ function RcdMsg(parsedMessage){
                     <div className="col-12 col-sm-4">
                       <div className="container mt-3">
                         <h2 className="card-title">Recharge Wallet</h2>
-                        <form action="http://192.168.1.70:8052/pay" method="get" className="d-flex flex-column">
+                        <form action="http://122.166.210.142:8052/pay" method="get" className="d-flex flex-column">
                           <div className="d-flex justify-content-center">
                             <button type="submit" value="500" name="amount" className="button-45 mr-2">Rs.500</button>
                             <button type="submit" value="1000" name="amount" className="button-45 mr-2">Rs.1000</button>

@@ -9,6 +9,45 @@ const Home = ({ userInfo, handleLogout }) => {
   const [searchChargerID, setChargerID] = useState('');
   const [ChargerID, setSearchChargerID] = useState('');
   const Username = userInfo.username;
+
+  const [timeoutId, setTimeoutId] = useState(null);
+  const [isTimeoutRunning, setIsTimeoutRunning] = useState(false);
+  
+  useEffect(() => {
+    if (isTimeoutRunning) {
+      // Start the timeout when isTimeoutRunning is true
+      const id = setTimeout(() => {
+        // Your timeout logic here
+        setShowAlerts('Timeout, Please re-initiate the charger !');
+        handleSearchBox();
+        stopTimeout();
+      }, 45000); // Example: 5 seconds delay
+
+      // Update timeoutId state with the ID returned by setTimeout
+      setTimeoutId(id);
+
+      // Cleanup function to stop the timeout when component unmounts or isTimeoutRunning becomes false
+      return () => clearTimeout(id);
+    }
+  }, [isTimeoutRunning]); // useEffect will re-run whenever isTimeoutRunning changes
+
+  const startTimeout = () => {
+    setIsTimeoutRunning(true); // Start the timeout by setting isTimeoutRunning to true
+  };
+
+  const stopTimeout = () => {
+    setIsTimeoutRunning(false); // Stop the timeout by setting isTimeoutRunning to false
+  };
+
+  const EndChargingSession = async (ChargerID) => {
+    try{
+      const response = await fetch(`/endChargingSession?ChargerID=${ChargerID}`);
+      const data = await response.json();
+      console.log(data);
+    }catch(error){
+      console.error('Error End Charging Session:', error);
+    }
+  }
   
   // Show error history (toggle button) 
   const [isTableVisible, setIsTableVisible] = useState(false);
@@ -26,6 +65,7 @@ const Home = ({ userInfo, handleLogout }) => {
       console.error('Error fetching wallet balance:', error);
     }
   };
+
   useEffect(() => {
     fetchWallletBal(Username);
   }, [Username]);
@@ -46,7 +86,7 @@ const Home = ({ userInfo, handleLogout }) => {
     await EndChargingSession(ChargerID);
   }
 
-  // Alert message
+  // Alert message (error)
   const [errorData, setShowAlerts] = useState(false);
   const closeAlert = () => {
     setShowAlerts(false);
@@ -65,43 +105,36 @@ const Home = ({ userInfo, handleLogout }) => {
         });
  
         if (response.ok) {
-          // Set search charger Id
           setSearchChargerID(searchChargerID);
-
           // Hide Search Box Section and show Status Section
           document.getElementById('searchBoxSection').style.display = 'none';
           document.getElementById('statusSection').style.display = 'block';
           document.getElementById('backSection').style.display = 'block';
-
           // Additional logic or state updates can be added here
           setIsTableVisible(false);
-
-          // Last status
           FetchLaststatus(searchChargerID);
         } else {
           const errorData = await response.json();
           // alert(errorData.message);
-          setShowAlerts(errorData);
+          setShowAlerts(errorData.message);
           // Show Search Box Section and hide Status Section
           document.getElementById('searchBoxSection').style.display = 'block';
           document.getElementById('statusSection').style.display = 'none';
           document.getElementById('backSection').style.display = 'none';
 
-          // state updates
+          // Additional logic or state updates can be added here
           setIsTableVisible(false);
         }
-    } 
-    catch (error) {
-      setShowAlerts(error);
+      } catch (error) {
+        alert(error);
+        // Show Search Box Section and hide Status Section in case of an error
+        document.getElementById('searchBoxSection').style.display = 'block';
+        document.getElementById('statusSection').style.display = 'none';
+        document.getElementById('backSection').style.display = 'none';
 
-      // Show Search Box Section and hide Status Section in case of an error
-      document.getElementById('searchBoxSection').style.display = 'block';
-      document.getElementById('statusSection').style.display = 'none';
-      document.getElementById('backSection').style.display = 'none';
-
-      // state updates
-      setIsTableVisible(false);
-    }
+        // Additional logic or state updates can be added here
+        setIsTableVisible(false);
+      }
   };
 
   const [ChargerStatus, setChargerStatus] = useState('');
@@ -137,19 +170,21 @@ const Home = ({ userInfo, handleLogout }) => {
         body: JSON.stringify({ id: ChargerID }),
       });
 
-        if (response.ok) {
-          const data = await response.json();
-          const status = data.message.status;
-          const formattedTimestamp = formatTimestamp(data.message.timestamp);
-
-          setChargerStatus(status);
-          setTimestamp(formattedTimestamp);
-          AppendStatusTime(status, formattedTimestamp);
-        } else {
-          console.error(`Failed to fetch status. Status code: ${response.status}`);
+      if (response.ok) {
+        const data = await response.json();
+        const status = data.message.status;
+        const formattedTimestamp = formatTimestamp(data.message.timestamp);
+        if(status === 'Available'){
+           startTimeout();
         }
+        setChargerStatus(status);
+        setTimestamp(formattedTimestamp);
+        AppendStatusTime(status, formattedTimestamp);
+      } else {
+        console.error(`Failed to fetch status. Status code: ${response.status}`);
+      }
     } catch (error) {
-        console.error(`Error while fetching status: ${error.message}`);
+       console.error(`Error while fetching status: ${error.message}`);
     }
   };
  
@@ -204,7 +239,12 @@ const Home = ({ userInfo, handleLogout }) => {
             CurrentTime = formatTimestamp(message[3].timestamp);
             errorCode = message[3].errorCode;
             console.log(`ChargerID ${DeviceID}: {"status": "${ChargerStatus}","time": "${CurrentTime}","error": "${errorCode}"}`);
-
+            if(ChargerStatus === 'Preparing'){
+              stopTimeout();
+            }
+            if(ChargerStatus === 'Available'){
+              startTimeout();
+            }
             // Update state variables to maintain the history
             if (errorCode !== 'NoError') {
               setHistory((historys) => [
@@ -222,61 +262,61 @@ const Home = ({ userInfo, handleLogout }) => {
             }
           break;
 
-          case 'Heartbeat':
-            CurrentTime = getCurrentTime();
-            setTimestamp(CurrentTime);
-          break;
+        case 'Heartbeat':
+          CurrentTime = getCurrentTime();
+          setTimestamp(CurrentTime);
+        break;
 
-          case 'MeterValues':
-            const meterValues = message[3].meterValue;
-            const sampledValue = meterValues[0].sampledValue;
-            const formattedJson = convertToFormattedJson(sampledValue);
+        case 'MeterValues':
+          const meterValues = message[3].meterValue;
+          const sampledValue = meterValues[0].sampledValue;
+          const formattedJson = convertToFormattedJson(sampledValue);
 
-            // You can use state to store these values and update the state
-            const updatedValues = {
-              voltage: formattedJson['Voltage'],
-              current: formattedJson['Current.Import'],
-              power: formattedJson['Power.Active.Import'],
-              energy: formattedJson['Energy.Active.Import.Register'],
-              frequency: formattedJson['Frequency'],
-              temperature: formattedJson['Temperature'],
-            };
-            setChargerStatus('Charging');
-            setTimestamp(getCurrentTime());
-            setVoltage(updatedValues.voltage);
-            setCurrent(updatedValues.current);
-            setPower(updatedValues.power);
-            setEnergy(updatedValues.energy);
-            setFrequency(updatedValues.frequency);
-            setTemperature(updatedValues.temperature);
-              console.log(`{ "V": ${updatedValues.voltage},"A": ${updatedValues.current},"W": ${updatedValues.power},"Wh": ${updatedValues.energy},"Hz": ${updatedValues.frequency},"Kelvin": ${updatedValues.temperature}}`);
-          break;
+          // You can use state to store these values and update the state
+          const updatedValues = {
+            voltage: formattedJson['Voltage'],
+            current: formattedJson['Current.Import'],
+            power: formattedJson['Power.Active.Import'],
+            energy: formattedJson['Energy.Active.Import.Register'],
+            frequency: formattedJson['Frequency'],
+            temperature: formattedJson['Temperature'],
+          };
+          setChargerStatus('Charging');
+          setTimestamp(getCurrentTime());
+          setVoltage(updatedValues.voltage);
+          setCurrent(updatedValues.current);
+          setPower(updatedValues.power);
+          setEnergy(updatedValues.energy);
+          setFrequency(updatedValues.frequency);
+          setTemperature(updatedValues.temperature);
+            console.log(`{ "V": ${updatedValues.voltage},"A": ${updatedValues.current},"W": ${updatedValues.power},"Wh": ${updatedValues.energy},"Hz": ${updatedValues.frequency},"Kelvin": ${updatedValues.temperature}}`);
+        break;
 
-          case 'Authorize':
-            if (checkFault === false) {
-              ChargerStatus = 'Authorized';
-            }
-            CurrentTime = getCurrentTime();
-          break;
+        case 'Authorize':
+          if (checkFault === false) {
+            ChargerStatus = 'Authorized';
+          }
+          CurrentTime = getCurrentTime();
+        break;
 
-          case 'FirmwareStatusNotification':
-            ChargerStatus = message[3].status.toUpperCase();
-          break;
+        case 'FirmwareStatusNotification':
+          ChargerStatus = message[3].status.toUpperCase();
+        break;
 
-          case 'StopTransaction':
-            ChargerStatus = 'Finishing';
-            CurrentTime = getCurrentTime();
-            setTimeout(function () {
-              updateSessionPriceToUser(ChargerID, user);
-            }, 5000);
-          break;
+        case 'StopTransaction':
+          ChargerStatus = 'Finishing';
+          CurrentTime = getCurrentTime();
+          setTimeout(function () {
+            updateSessionPriceToUser(ChargerID, user);
+          }, 5000);
+        break;
 
-          case 'Accepted':
-            ChargerStatus = 'ChargerAccepted';
-            CurrentTime = getCurrentTime();
+        case 'Accepted':
+          ChargerStatus = 'ChargerAccepted';
+          CurrentTime = getCurrentTime();
           break;
-        }
       }
+    }
     if (ChargerStatus) {
       AppendStatusTime(ChargerStatus, CurrentTime);
     }
@@ -289,7 +329,6 @@ const Home = ({ userInfo, handleLogout }) => {
     return formatTimestamp(currentTime);
   };
 
-  // Format time stamp
   const formatTimestamp = (originalTimestamp) => {
     const date = new Date(originalTimestamp);
     const day = String(date.getDate()).padStart(2, '0');
@@ -312,8 +351,8 @@ const Home = ({ userInfo, handleLogout }) => {
     return formattedJson;
   };
 
-  // start button
-  const handleStartTransaction = async () => {
+   // start button
+   const handleStartTransaction = async () => {
     try {
       const response = await fetch('/start', {
         method: 'POST',
@@ -354,7 +393,6 @@ const Home = ({ userInfo, handleLogout }) => {
     }
   };
 
-  // Append status time
   const AppendStatusTime = (ChargerStatus, CurrentTime) => {
     setChargerStatus(ChargerStatus);
     setTimestamp(CurrentTime);
@@ -369,7 +407,6 @@ const Home = ({ userInfo, handleLogout }) => {
     stopButton.disabled = ChargerStatus !== 'Charging';
   };
 
-  // Get updated charing details
   const updateSessionPriceToUser = async (ChargerID, user) => {
     try {
       const response = await fetch('/getUpdatedCharingDetails', {
@@ -404,7 +441,7 @@ const Home = ({ userInfo, handleLogout }) => {
     }
   };
 
-  // ChargerSession details and price alert message
+  // Alert message show
   const [showAlert, setShowAlert] = useState(false);
   const [chargingSession, setChargingSession] = useState({});
   const [updatedUser, setUpdatedUser] = useState({});
@@ -416,24 +453,25 @@ const Home = ({ userInfo, handleLogout }) => {
     setShowAlert(true);
   };
 
-  // alert message close
+  // Alert message close
   const handleCloseAlert = () => {
     setShowAlert(false);
   };
 
   // Get table data
   useEffect(() => {
+    // Define the API URL based on the event detail
     const url = `/GetAllChargerDetails`;
-      axios.get(url).then((res) => {
+    axios.get(url).then((res) => {
         setData(res.data.value);
         setLoading(false);
-      })
-      .catch((err) => {
+    })
+       .catch((err) => {
         console.error('Error fetching data:', err);
         setError('Error fetching data. Please try again.');
         setLoading(false);
       });
-  }, []);
+}, []);
 
   return (
     <div>
@@ -453,7 +491,6 @@ const Home = ({ userInfo, handleLogout }) => {
           </ul>
         </div>
       </nav>
-
       {/* Container for Page welcome session start */}
       <div className="container mt-4">
         <div className="col-md-12">
@@ -471,7 +508,6 @@ const Home = ({ userInfo, handleLogout }) => {
           </blockquote>
         </div>
       </div>
-      {/* Container for Page welcome session end */}
      
       <div className="container mt-4">
         {/* Wallet Section start */}
@@ -596,11 +632,10 @@ const Home = ({ userInfo, handleLogout }) => {
               </div>
             </blockquote>
           </div>
-          {/* charger list end */}
         </div>
         {/* Charger Search Box and charger list table Section end */}
 
-        {/* Charger status Section  start */}
+        {/* Charger status Section  start*/}
         <div className="col-md-12" id="statusSection" style={{ display: 'none' }}>
           <blockquote className="blockquote">
             <div className="card">
@@ -706,6 +741,7 @@ const Home = ({ userInfo, handleLogout }) => {
                     </div>
                   </div>
                 )}
+
                 <div className="col-md-12 grid-margin stretch-card" style={{paddingTop:'20px'}}>
                   <div className="">
                     <div className="card-body">
@@ -729,9 +765,9 @@ const Home = ({ userInfo, handleLogout }) => {
             </div>
           </blockquote>
         </div>
-        {/* Charger status Section end*/}
-        
-        {/* Alert charger update Session Price To User start */}
+        {/* Charger status Section stop*/}
+      </div>
+        {/* Alert charger update Session Price To User start*/}
         {showAlert && (
           <div className="alert-overlay">
             <div className="alert success" style={{width:'500px'}}>
@@ -745,19 +781,18 @@ const Home = ({ userInfo, handleLogout }) => {
             </div>
           </div>
         )}
-        {/* Alert charger update Session Price To User end */}
-      
-        {/* Alert message box start */}
+        {/* Alert charger update Session Price To User end*/}
+
+        {/* Alert message start */}
         {errorData && (
-          <div className="alert alert-warning alert-dismissible fade show alert-container" role="alert" style={{width:'500px', textAlign:'center'}}>
-            <strong>{errorData.message}</strong> 
+          <div className="alert alert-warning alert-dismissible fade show alert-container" role="alert" style={{width:'400px', textAlign:'center'}}>
+            <strong>{errorData}</strong> 
             <button type="button" className="close" data-dismiss="alert" aria-label="Close" onClick={closeAlert} style={{top:'7px'}}>
               <span aria-hidden="true">&times;</span>
             </button>
           </div>
         )}
-        {/* Alert message  box end */}
-      </div>
+        {/* Alert message end*/}
     </div>
   );
 };

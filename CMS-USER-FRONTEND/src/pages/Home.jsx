@@ -18,8 +18,8 @@ const Home = ({ userInfo, handleLogout }) => {
       // Start the timeout when isTimeoutRunning is true
       const id = setTimeout(() => {
         // Your timeout logic here
-        setShowAlerts('Timeout, Please re-initiate the charger !');
         handleSearchBox();
+        setShowAlerts('Timeout, Please re-initiate the charger !');
         stopTimeout();
       }, 45000); // Example: 5 seconds delay
 

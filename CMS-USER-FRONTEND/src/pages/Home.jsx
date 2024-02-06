@@ -5,10 +5,53 @@ const Home = ({ userInfo, handleLogout }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isTableVisible, setIsTableVisible] = useState(false);
+  const toggleTableVisibility = () => {
+    setIsTableVisible(!isTableVisible);
+  };
   const [walletBalance, setWalletBalance] = useState(null);
   const [searchChargerID, setChargerID] = useState('');
   const [ChargerID, setSearchChargerID] = useState('');
   const Username = userInfo.username;
+
+  const [timeoutId, setTimeoutId] = useState(null);
+  const [isTimeoutRunning, setIsTimeoutRunning] = useState(false);
+
+useEffect(() => {
+    if (isTimeoutRunning) {
+      // Start the timeout when isTimeoutRunning is true
+      const id = setTimeout(() => {
+        // Your timeout logic here
+        setShowAlerts('Timeout, Please re-initiate the charger !');
+        handleSearchBox();
+        stopTimeout();
+      }, 45000); // Example: 5 seconds delay
+
+      // Update timeoutId state with the ID returned by setTimeout
+      setTimeoutId(id);
+
+      // Cleanup function to stop the timeout when component unmounts or isTimeoutRunning becomes false
+      return () => clearTimeout(id);
+    }
+  }, [isTimeoutRunning]); // useEffect will re-run whenever isTimeoutRunning changes
+
+  const startTimeout = () => {
+    setIsTimeoutRunning(true); // Start the timeout by setting isTimeoutRunning to true
+  };
+
+  const stopTimeout = () => {
+    setIsTimeoutRunning(false); // Stop the timeout by setting isTimeoutRunning to false
+  };
+
+  const EndChargingSession = async (ChargerID) => {
+    try{
+      const response = await fetch(`/endChargingSession?ChargerID=${ChargerID}`);
+      const data = await response.json();
+      console.log(data);
+    }catch(error){
+      console.error('Error End Charging Session:', error);
+    }
+  }
  
   const fetchWallletBal = async (username) => {
     try {
@@ -19,6 +62,7 @@ const Home = ({ userInfo, handleLogout }) => {
       console.error('Error fetching wallet balance:', error);
     }
   };
+
   useEffect(() => {
     fetchWallletBal(Username);
   }, [Username]);
@@ -39,13 +83,11 @@ const Home = ({ userInfo, handleLogout }) => {
     await EndChargingSession(ChargerID);
   }
 
-  // Alert message
   const [errorData, setShowAlerts] = useState(false);
   const closeAlert = () => {
     setShowAlerts(false);
   };
 
-  // Search charger Id
   const handleSearchRequest = async (e) => {
     e.preventDefault();
     try {
@@ -58,49 +100,44 @@ const Home = ({ userInfo, handleLogout }) => {
         });
  
         if (response.ok) {
-          // Set search charger Id
           setSearchChargerID(searchChargerID);
-
           // Hide Search Box Section and show Status Section
           document.getElementById('searchBoxSection').style.display = 'none';
           document.getElementById('statusSection').style.display = 'block';
           document.getElementById('backSection').style.display = 'block';
-
           // Additional logic or state updates can be added here
           setIsTableVisible(false);
-
-          // Last status
           FetchLaststatus(searchChargerID);
         } else {
           const errorData = await response.json();
           // alert(errorData.message);
-          setShowAlerts(errorData);
+          setShowAlerts(errorData.message);
           // Show Search Box Section and hide Status Section
           document.getElementById('searchBoxSection').style.display = 'block';
           document.getElementById('statusSection').style.display = 'none';
           document.getElementById('backSection').style.display = 'none';
 
-          // state updates
+          // Additional logic or state updates can be added here
           setIsTableVisible(false);
         }
-    } 
-    catch (error) {
-      setShowAlerts(error);
+      } catch (error) {
+        alert(error);
+        // Show Search Box Section and hide Status Section in case of an error
+        document.getElementById('searchBoxSection').style.display = 'block';
+        document.getElementById('statusSection').style.display = 'none';
+        document.getElementById('backSection').style.display = 'none';
 
-      // Show Search Box Section and hide Status Section in case of an error
-      document.getElementById('searchBoxSection').style.display = 'block';
-      document.getElementById('statusSection').style.display = 'none';
-      document.getElementById('backSection').style.display = 'none';
-
-      // state updates
-      setIsTableVisible(false);
-    }
+        // Additional logic or state updates can be added here
+        setIsTableVisible(false);
+      }
   };
 
+  // var [isDeviceInDatabase, setIsDeviceInDatabase] = useState(false);
   const [ChargerStatus, setChargerStatus] = useState('');
   const [timestamp, setTimestamp] = useState('');
   const [checkFault, setCheckFault] = useState(false);
   const [historys, setHistory] = useState([]);
+  // const [errorCode, setErrorCode] = useState('');
   const [voltage, setVoltage] = useState(0);
   const [current, setCurrent] = useState(0);
   const [power, setPower] = useState(0);
@@ -119,22 +156,23 @@ const Home = ({ userInfo, handleLogout }) => {
     }
   }, [ChargerID]);
 
-  // Last status
-  async function FetchLaststatus(ChargerID){
-    try {
-      const response = await fetch('/FetchLaststatus', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ id: ChargerID }),
-      });
+    async function FetchLaststatus(ChargerID){
+      try {
+        const response = await fetch('/FetchLaststatus', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ id: ChargerID }),
+        });
 
         if (response.ok) {
           const data = await response.json();
           const status = data.message.status;
           const formattedTimestamp = formatTimestamp(data.message.timestamp);
-
+          if(status === 'Available'){
+            startTimeout();
+          }
           setChargerStatus(status);
           setTimestamp(formattedTimestamp);
           AppendStatusTime(status, formattedTimestamp);
@@ -200,7 +238,12 @@ function RcdMsg(parsedMessage){
             CurrentTime = formatTimestamp(message[3].timestamp);
             errorCode = message[3].errorCode;
             console.log(`ChargerID ${DeviceID}: {"status": "${ChargerStatus}","time": "${CurrentTime}","error": "${errorCode}"}`);
-
+            if(ChargerStatus === 'Preparing'){
+              stopTimeout();
+            }
+            if(ChargerStatus === 'Available'){
+              startTimeout();
+            }
             // Update state variables to maintain the history
             if (errorCode !== 'NoError') {
               setHistory((historys) => [
@@ -218,74 +261,73 @@ function RcdMsg(parsedMessage){
             }
             break;
 
-        case 'Heartbeat':
-          CurrentTime = getCurrentTime();
-          setTimestamp(CurrentTime);
-        break;
+          case 'Heartbeat':
+            CurrentTime = getCurrentTime();
+            setTimestamp(CurrentTime);
+            break;
 
-        case 'MeterValues':
-          const meterValues = message[3].meterValue;
-          const sampledValue = meterValues[0].sampledValue;
-          const formattedJson = convertToFormattedJson(sampledValue);
+            case 'MeterValues':
+              //setErrorCode('NoError'); // Use state to manage errorCode
+              const meterValues = message[3].meterValue;
+              const sampledValue = meterValues[0].sampledValue;
+              const formattedJson = convertToFormattedJson(sampledValue);
+           
+              // You can use state to store these values and update the state
+              const updatedValues = {
+                voltage: formattedJson['Voltage'],
+                current: formattedJson['Current.Import'],
+                power: formattedJson['Power.Active.Import'],
+                energy: formattedJson['Energy.Active.Import.Register'],
+                frequency: formattedJson['Frequency'],
+                temperature: formattedJson['Temperature'],
+              };
+              setChargerStatus('Charging');
+              setTimestamp(getCurrentTime());
+              setVoltage(updatedValues.voltage);
+              setCurrent(updatedValues.current);
+              setPower(updatedValues.power);
+              setEnergy(updatedValues.energy);
+              setFrequency(updatedValues.frequency);
+              setTemperature(updatedValues.temperature);
+              console.log(`{ "V": ${updatedValues.voltage},"A": ${updatedValues.current},"W": ${updatedValues.power},"Wh": ${updatedValues.energy},"Hz": ${updatedValues.frequency},"Kelvin": ${updatedValues.temperature}}`);
+            break;
 
-          // You can use state to store these values and update the state
-          const updatedValues = {
-            voltage: formattedJson['Voltage'],
-            current: formattedJson['Current.Import'],
-            power: formattedJson['Power.Active.Import'],
-            energy: formattedJson['Energy.Active.Import.Register'],
-            frequency: formattedJson['Frequency'],
-            temperature: formattedJson['Temperature'],
-          };
-          setChargerStatus('Charging');
-          setTimestamp(getCurrentTime());
-          setVoltage(updatedValues.voltage);
-          setCurrent(updatedValues.current);
-          setPower(updatedValues.power);
-          setEnergy(updatedValues.energy);
-          setFrequency(updatedValues.frequency);
-          setTemperature(updatedValues.temperature);
-            console.log(`{ "V": ${updatedValues.voltage},"A": ${updatedValues.current},"W": ${updatedValues.power},"Wh": ${updatedValues.energy},"Hz": ${updatedValues.frequency},"Kelvin": ${updatedValues.temperature}}`);
-        break;
+          case 'Authorize':
+            if (checkFault === false) {
+              ChargerStatus = 'Authorized';
+            }
+            CurrentTime = getCurrentTime();
+            break;
 
-        case 'Authorize':
-          if (checkFault === false) {
-            ChargerStatus = 'Authorized';
-          }
-          CurrentTime = getCurrentTime();
-        break;
+          case 'FirmwareStatusNotification':
+            ChargerStatus = message[3].status.toUpperCase();
+            break;
 
-        case 'FirmwareStatusNotification':
-          ChargerStatus = message[3].status.toUpperCase();
-        break;
+          case 'StopTransaction':
+            ChargerStatus = 'Finishing';
+            CurrentTime = getCurrentTime();
+            setTimeout(function () {
+              updateSessionPriceToUser(ChargerID, user);
+            }, 5000);
+            break;
 
-        case 'StopTransaction':
-          ChargerStatus = 'Finishing';
-          CurrentTime = getCurrentTime();
-          setTimeout(function () {
-            updateSessionPriceToUser(ChargerID, user);
-          }, 5000);
-        break;
-
-        case 'Accepted':
-          ChargerStatus = 'ChargerAccepted';
-          CurrentTime = getCurrentTime();
-          break;
+          case 'Accepted':
+            ChargerStatus = 'ChargerAccepted';
+            CurrentTime = getCurrentTime();
+            break;
+        }
       }
-    }
-    if (ChargerStatus) {
-      AppendStatusTime(ChargerStatus, CurrentTime);
-    }
-  }
 
-  // Get current time
+      if (ChargerStatus) {
+        AppendStatusTime(ChargerStatus, CurrentTime);
+      }
+}
   const getCurrentTime = () => {
     const currentDate = new Date();
     const currentTime = currentDate.toISOString();
     return formatTimestamp(currentTime);
   };
 
-  // Format time stamp
   const formatTimestamp = (originalTimestamp) => {
     const date = new Date(originalTimestamp);
     const day = String(date.getDate()).padStart(2, '0');
@@ -308,8 +350,8 @@ function RcdMsg(parsedMessage){
     return formattedJson;
   };
 
-  // start button
-  const handleStartTransaction = async () => {
+   // start button
+   const handleStartTransaction = async () => {
     try {
       const response = await fetch('/start', {
         method: 'POST',
@@ -350,7 +392,6 @@ function RcdMsg(parsedMessage){
     }
   };
 
-  // Append status time
   const AppendStatusTime = (ChargerStatus, CurrentTime) => {
     setChargerStatus(ChargerStatus);
     setTimestamp(CurrentTime);
@@ -365,7 +406,6 @@ function RcdMsg(parsedMessage){
     stopButton.disabled = ChargerStatus !== 'Charging';
   };
 
-  // Get updated charing details
   const updateSessionPriceToUser = async (ChargerID, user) => {
     try {
       const response = await fetch('/getUpdatedCharingDetails', {
@@ -399,8 +439,6 @@ function RcdMsg(parsedMessage){
       console.error('Update failed:', error.message);
     }
   };
-
-  // ChargerSession details and price alert message
   const [showAlert, setShowAlert] = useState(false);
   const [chargingSession, setChargingSession] = useState({});
   const [updatedUser, setUpdatedUser] = useState({});
@@ -412,24 +450,24 @@ function RcdMsg(parsedMessage){
     setShowAlert(true);
   };
 
-  // alert message close
   const handleCloseAlert = () => {
     setShowAlert(false);
   };
 
   // Get table data
   useEffect(() => {
+    // Define the API URL based on the event detail
     const url = `/GetAllChargerDetails`;
-      axios.get(url).then((res) => {
+    axios.get(url).then((res) => {
         setData(res.data.value);
         setLoading(false);
-      })
-      .catch((err) => {
+    })
+       .catch((err) => {
         console.error('Error fetching data:', err);
         setError('Error fetching data. Please try again.');
         setLoading(false);
       });
-  }, []);
+}, []);
 
   return (
     <div>
@@ -441,6 +479,7 @@ function RcdMsg(parsedMessage){
         </button>
         <div className="collapse navbar-collapse" id="navbarNav">
           <ul className="navbar-nav ml-auto">
+            {/* Logout Form in Navbar */}
             <li className="nav-item">
               <form className="form-inline" onClick={handleLogout}>
                 <button type="button" className="btn btn-danger">Logout</button>
@@ -449,7 +488,7 @@ function RcdMsg(parsedMessage){
           </ul>
         </div>
       </nav>
-      {/* Container for Page welcome session start */}
+      {/* Container for Page Content */}
       <div className="container mt-4">
         <div className="col-md-12">
           <blockquote className="blockquote">
@@ -466,7 +505,6 @@ function RcdMsg(parsedMessage){
           </blockquote>
         </div>
       </div>
-      {/* Container for Page welcome session end */}
      
       <div className="container mt-4">
         {/* Wallet Section start */}
@@ -507,7 +545,7 @@ function RcdMsg(parsedMessage){
             </div>
           </blockquote>
         </div>
-        {/* Wallet Section end */}
+        {/* Wallet Section stop */}
 
         {/* Charger Search Box and charger list table Section  start */}
         <div id="searchBoxSection">
@@ -517,6 +555,10 @@ function RcdMsg(parsedMessage){
                 <div className="card-body">
                   <h2 className="card-title" style={{textAlign: 'center'}}>SEARCH DEVICE</h2>
                   <form onSubmit={handleSearchRequest}>
+                    {/* <div className="form-group">
+                      <input type="text" className="form-control" id="chargerID" name="chargerID" value={searchChargerID} onChange={(e) => setChargerID(e.target.value)} placeholder="Enter ChargerID" />
+                    </div>
+                    <button type="submit" className="btn btn-primary">Search</button> */}
                     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
                     <div className="form-group" style={{ width: '50%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                         <input type="text" style={{textAlign: 'center'}} className="form-control" id="chargerID" name="chargerID" value={searchChargerID} onChange={(e) => setChargerID(e.target.value)} placeholder="Enter DeviceID" />
@@ -528,7 +570,7 @@ function RcdMsg(parsedMessage){
               </div>
             </blockquote>
           </div>
-          {/* charger list start */}
+          {/* charger list */}
           <div className="col-md-12" >
             <blockquote className="blockquote">
               <div className="card">
@@ -591,11 +633,10 @@ function RcdMsg(parsedMessage){
               </div>
             </blockquote>
           </div>
-          {/* charger list end */}
         </div>
-        {/* Charger Search Box and charger list table Section end */}
+        {/* Charger Search Box and charger list table Section stop */}
 
-        {/* Charger status Section  start */}
+        {/* Charger status Section  start*/}
         <div className="col-md-12" id="statusSection" style={{ display: 'none' }}>
           <blockquote className="blockquote">
             <div className="card">
@@ -701,6 +742,7 @@ function RcdMsg(parsedMessage){
                     </div>
                   </div>
                 )}
+
                 <div className="col-md-12 grid-margin stretch-card" style={{paddingTop:'20px'}}>
                   <div className="">
                     <div className="card-body">
@@ -724,9 +766,11 @@ function RcdMsg(parsedMessage){
             </div>
           </blockquote>
         </div>
-        {/* Charger status Section end*/}
-        
-        {/* Alert charger update Session Price To User start */}
+        {/* Charger status Section stop*/}
+        {/* Alert charger update Session Price To User start*/}
+        <div>
+        {/* Your API call logic and setApiData usage go here */}
+        {/* Alert Box */}
         {showAlert && (
           <div className="alert-overlay">
             <div className="alert success" style={{width:'500px'}}>
@@ -740,19 +784,20 @@ function RcdMsg(parsedMessage){
             </div>
           </div>
         )}
-        {/* Alert charger update Session Price To User end */}
-      
-        {/* Alert message box start */}
+        {/* Rest of your component */}
+        </div>
+        {/* Alert charger update Session Price To User stop*/}
+      </div>
+        {/* Alert message */}
         {errorData && (
-          <div className="alert alert-warning alert-dismissible fade show alert-container" role="alert" style={{width:'500px', textAlign:'center'}}>
-            <strong>{errorData.message}</strong> 
+          <div className="alert alert-warning alert-dismissible fade show alert-container" role="alert" style={{width:'400px', textAlign:'center'}}>
+            <strong>{errorData}</strong> 
             <button type="button" className="close" data-dismiss="alert" aria-label="Close" onClick={closeAlert} style={{top:'7px'}}>
               <span aria-hidden="true">&times;</span>
             </button>
           </div>
         )}
-        {/* Alert message  box end */}
-      </div>
+        {/* Alert message  */}
     </div>
   );
 };

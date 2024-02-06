@@ -13,6 +13,45 @@ const Home = ({ userInfo, handleLogout }) => {
   const [searchChargerID, setChargerID] = useState('');
   const [ChargerID, setSearchChargerID] = useState('');
   const Username = userInfo.username;
+
+  const [timeoutId, setTimeoutId] = useState(null);
+  const [isTimeoutRunning, setIsTimeoutRunning] = useState(false);
+
+useEffect(() => {
+    if (isTimeoutRunning) {
+      // Start the timeout when isTimeoutRunning is true
+      const id = setTimeout(() => {
+        // Your timeout logic here
+        setShowAlerts('Timeout, Please re-initiate the charger !');
+        handleSearchBox();
+        stopTimeout();
+      }, 45000); // Example: 5 seconds delay
+
+      // Update timeoutId state with the ID returned by setTimeout
+      setTimeoutId(id);
+
+      // Cleanup function to stop the timeout when component unmounts or isTimeoutRunning becomes false
+      return () => clearTimeout(id);
+    }
+  }, [isTimeoutRunning]); // useEffect will re-run whenever isTimeoutRunning changes
+
+  const startTimeout = () => {
+    setIsTimeoutRunning(true); // Start the timeout by setting isTimeoutRunning to true
+  };
+
+  const stopTimeout = () => {
+    setIsTimeoutRunning(false); // Stop the timeout by setting isTimeoutRunning to false
+  };
+
+  const EndChargingSession = async (ChargerID) => {
+    try{
+      const response = await fetch(`/endChargingSession?ChargerID=${ChargerID}`);
+      const data = await response.json();
+      console.log(data);
+    }catch(error){
+      console.error('Error End Charging Session:', error);
+    }
+  }
  
   const fetchWallletBal = async (username) => {
     try {
@@ -30,7 +69,7 @@ const Home = ({ userInfo, handleLogout }) => {
   
  
   // Function to handle the "Back" button click
-  function handleSearchBox() {
+  async function handleSearchBox() {
 
     setChargerID('');
     setSearchChargerID('');
@@ -40,6 +79,8 @@ const Home = ({ userInfo, handleLogout }) => {
     document.getElementById('statusSection').style.display = 'none';
     // Hide the "Back" button
     document.getElementById('backSection').style.display = 'none';
+
+    await EndChargingSession(ChargerID);
   }
 
   const [errorData, setShowAlerts] = useState(false);
@@ -64,14 +105,13 @@ const Home = ({ userInfo, handleLogout }) => {
           document.getElementById('searchBoxSection').style.display = 'none';
           document.getElementById('statusSection').style.display = 'block';
           document.getElementById('backSection').style.display = 'block';
-
           // Additional logic or state updates can be added here
           setIsTableVisible(false);
           FetchLaststatus(searchChargerID);
         } else {
           const errorData = await response.json();
           // alert(errorData.message);
-          setShowAlerts(errorData);
+          setShowAlerts(errorData.message);
           // Show Search Box Section and hide Status Section
           document.getElementById('searchBoxSection').style.display = 'block';
           document.getElementById('statusSection').style.display = 'none';
@@ -130,7 +170,9 @@ const Home = ({ userInfo, handleLogout }) => {
           const data = await response.json();
           const status = data.message.status;
           const formattedTimestamp = formatTimestamp(data.message.timestamp);
-
+          if(status === 'Available'){
+            startTimeout();
+          }
           setChargerStatus(status);
           setTimestamp(formattedTimestamp);
           AppendStatusTime(status, formattedTimestamp);
@@ -196,7 +238,12 @@ function RcdMsg(parsedMessage){
             CurrentTime = formatTimestamp(message[3].timestamp);
             errorCode = message[3].errorCode;
             console.log(`ChargerID ${DeviceID}: {"status": "${ChargerStatus}","time": "${CurrentTime}","error": "${errorCode}"}`);
-
+            if(ChargerStatus === 'Preparing'){
+              stopTimeout();
+            }
+            if(ChargerStatus === 'Available'){
+              startTimeout();
+            }
             // Update state variables to maintain the history
             if (errorCode !== 'NoError') {
               setHistory((historys) => [
@@ -311,7 +358,7 @@ function RcdMsg(parsedMessage){
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ id: ChargerID }),
+        body: JSON.stringify({ id: ChargerID, user: Username }),
       });
 
       if (response.status === 200) {
@@ -381,7 +428,8 @@ function RcdMsg(parsedMessage){
         setChargerID('');
         document.getElementById('searchBoxSection').style.display = 'block';
         document.getElementById('statusSection').style.display = 'none';
-        fetchWallletBal(Username);
+        await fetchWallletBal(Username);
+        await EndChargingSession(Username);
       } else {
         // Log or handle error
         console.error('Update failed:', response.statusText);
@@ -742,8 +790,8 @@ function RcdMsg(parsedMessage){
       </div>
         {/* Alert message */}
         {errorData && (
-          <div className="alert alert-warning alert-dismissible fade show alert-container" role="alert" style={{width:'500px', textAlign:'center'}}>
-            <strong>{errorData.message}</strong> 
+          <div className="alert alert-warning alert-dismissible fade show alert-container" role="alert" style={{width:'400px', textAlign:'center'}}>
+            <strong>{errorData}</strong> 
             <button type="button" className="close" data-dismiss="alert" aria-label="Close" onClick={closeAlert} style={{top:'7px'}}>
               <span aria-hidden="true">&times;</span>
             </button>

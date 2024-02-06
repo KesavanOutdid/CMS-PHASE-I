@@ -15,10 +15,6 @@ router.use(cors());
 
 router.use(express.urlencoded({ extended: true }));
 
-// router.get('/ChargerDashboard', (req, res) => {
-//     res.sendFile(path.join(__dirname, 'public', 'chargerDashboard.html'));
-// });
-
 router.post('/CheckLoginCredentials', auth.authenticate, (req, res) => {
     res.status(200).json({ message: 'Success' });
 });
@@ -49,6 +45,27 @@ router.get('/GetWalletBalance', async(req, res) => {
     }
 });
 
+router.get('/endChargingSession', async(req, res) => {
+    const ChargerID = req.query.ChargerID;
+    try {
+        const db = await database.connectToDatabase();
+        const collection = db.collection('ev_details');
+        const result = await collection.updateOne({ ChargerID: ChargerID }, { $set: { current_or_active_user: null } });
+
+        if (result.modifiedCount === 0) {
+            const errorMessage = 'Username not found to update end charging session';
+            return res.status(404).json({ message: errorMessage });
+        }
+
+        res.status(200).json({ message: 'End Charging session updated successfully.' });
+
+    } catch (error) {
+        console.error('Error updating end charging session:', error);
+        const errorMessage = 'Internal Server Error';
+        return res.status(500).json({ message: errorMessage });
+    }
+});
+
 router.post('/SearchCharger', async(req, res) => {
     const ChargerID = req.body.searchChargerID;
     const user = req.body.Username;
@@ -62,9 +79,16 @@ router.post('/SearchCharger', async(req, res) => {
         const chargerDetails = await evDetailsCollection.findOne({ ChargerID: ChargerID });
 
         if (!chargerDetails) {
-            const errorMessage = 'Charger ID not found';
+            const errorMessage = 'Device ID not found !';
             return res.status(404).json({ message: errorMessage });
         }
+
+        // Check if current_or_active_user is already set
+        if (chargerDetails.current_or_active_user && user !== chargerDetails.current_or_active_user) {
+            const errorMessage = 'Charger is already in use !';
+            return res.status(400).json({ message: errorMessage });
+        }
+
 
         // Get wallet balance from the 'users' collection
         const userRecord = await usersCollection.findOne({ username: user });
@@ -102,7 +126,6 @@ router.post('/SearchCharger', async(req, res) => {
     }
 });
 
-
 //fetch last charger status
 router.post('/FetchLaststatus', async(req, res) => {
     const parsedUrl = url.parse(req.url, true);
@@ -133,9 +156,10 @@ router.post('/start', async(req, res) => {
     // const parsedUrl = url.parse(req.url, true);
     // const queryParams = parsedUrl.query;
     const id = req.body.id;
+    const user = req.body.user;
 
     //const deviceIDToSendTo = id;
-    const ip = await getIp(id);
+    const ip = await getIpAndupdateUser(id, user);
     const wsToSendTo = wsConnections.get(ip);
 
     if (wsToSendTo) {
@@ -164,7 +188,7 @@ router.post('/stop', async(req, res) => {
     // const parsedUrl = url.parse(req.url, true);
     // const queryParams = parsedUrl.query;
     const id = req.body.id;
-    const ip = await getIp(id);
+    const ip = await getIpAndupdateUser(id);
     // Specify the device ID you want to send the message to
     //const deviceIDToSendTo = id;
     const db = await database.connectToDatabase();
@@ -373,13 +397,24 @@ router.get('/GetAllChargerDetails', async function(req, res) {
     }
 });
 
-async function getIp(chargerID) {
+async function getIpAndupdateUser(chargerID, user) {
     try {
         const db = await database.connectToDatabase();
         const getip = await db.collection('ev_details').findOne({ ChargerID: chargerID });
         const ip = getip.ip;
         if (getip) {
-            console.log(`GetIP successful`);
+            if (user !== undefined) {
+                const updateResult = await db.collection('ev_details').updateOne({ ChargerID: chargerID }, { $set: { current_or_active_user: user } });
+
+                if (updateResult.modifiedCount === 1) {
+                    console.log(`Updated current_or_active_user to ${user} successfully for ChargerID ${chargerID}`);
+                } else {
+                    console.log(`Failed to update current_or_active_user for ChargerID ${chargerID}`);
+                }
+            } else {
+                console.log('User is undefined');
+            }
+
             return ip;
         } else {
             console.log(`GetIP Unsuccessful`);

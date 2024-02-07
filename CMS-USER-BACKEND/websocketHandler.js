@@ -141,7 +141,7 @@ const handleWebSocketConnection = (WebSocket, wss, wsConnections, ClientConnecti
                         let StopTimestamp;
                         if (status == 'Available') {
                             timeoutId = setTimeout(async() => {
-                                const result = await updateEndChargingSession(uniqueIdentifier);
+                                const result = await updateCurrentOrActiveUserToNull(uniqueIdentifier);
                                 if (result === true) {
                                     console.log('End charging session is updated successfully.');
                                 } else {
@@ -615,7 +615,7 @@ async function updateSessionPriceToUser(user, price) {
     }
 }
 
-async function updateEndChargingSession(uniqueIdentifier) {
+async function updateCurrentOrActiveUserToNull(uniqueIdentifier) {
     try {
         const db = await connectToDatabase();
         const collection = db.collection('ev_details');
@@ -627,7 +627,7 @@ async function updateEndChargingSession(uniqueIdentifier) {
 
         return true;
     } catch (error) {
-        console.error('Error updating end charging session:', error);
+        console.error('Error while update CurrentOrActiveUser To Null:', error);
         return false;
     }
 }

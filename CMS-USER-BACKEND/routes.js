@@ -19,6 +19,36 @@ router.post('/CheckLoginCredentials', auth.authenticate, (req, res) => {
     res.status(200).json({ message: 'Success' });
 });
 
+router.post('/LogoutCheck', async(req, res) => {
+    const chargerID = req.body.ChargerID;
+    try {
+        const db = await database.connectToDatabase();
+        const latestStatus = await db.collection('ev_charger_status').findOne({ chargerID: chargerID });
+
+        if (latestStatus) {
+            if (latestStatus.status === 'Available') {
+                const collection = db.collection('ev_details');
+                const result = await collection.updateOne({ ChargerID: chargerID }, { $set: { current_or_active_user: null } });
+
+                if (result.modifiedCount === 0) {
+                    console.log('logoutCheck - Not Updated !');
+                    res.status(200).json({ message: 'NOT OK' });
+                } else {
+                    console.log('logoutCheck - Updated !');
+                    res.status(200).json({ message: 'OK' });
+                }
+            } else {
+                console.log("logoutCheck - Status is not in Available");
+                res.status(200).json({ message: 'OK' });
+            }
+        }
+
+    } catch (error) {
+        console.error('LoginCheck - error while update:', error);
+        res.status(200).json({ message: 'LoginCheck - error while update' });
+    }
+});
+
 router.post('/RegisterNewUser', auth.registerUser, (req, res) => {
     res.status(200).json({ message: 'Success' });
 });
@@ -128,8 +158,6 @@ router.post('/SearchCharger', async(req, res) => {
 
 //fetch last charger status
 router.post('/FetchLaststatus', async(req, res) => {
-    const parsedUrl = url.parse(req.url, true);
-    const queryParams = parsedUrl.query;
     const id = req.body.id
     try {
         const db = await database.connectToDatabase();

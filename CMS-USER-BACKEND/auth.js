@@ -26,7 +26,6 @@ const authenticate = async(req, res, next) => {
 
 const registerUser = async(req, res, next) => {
     const { registerUsername, registerPassword, registerPhone } = req.body;
-    console.log(registerPassword);
     try {
         const db = await database.connectToDatabase();
         const usersCollection = db.collection('users');

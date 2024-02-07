@@ -100,6 +100,7 @@ const Home = ({ userInfo, handleLogout }) => {
 
     setChargerID('');
     setSearchChargerID('');
+    stopTimeout();
     // Show the rechargeWalletSection
     document.getElementById('rechargeWalletSection').style.display = 'block';
     // Show the searchBoxSection

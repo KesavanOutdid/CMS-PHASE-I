@@ -13,6 +13,30 @@ const Home = ({ userInfo, handleLogout }) => {
   const [timeoutId, setTimeoutId] = useState(null);
   const [isTimeoutRunning, setIsTimeoutRunning] = useState(false);
   
+  
+  const handleLogouts = async (ChargerID) => {
+    try {
+      if(ChargerID){
+        const response = await fetch('/LogoutCheck', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+            body: JSON.stringify({ChargerID: ChargerID}),
+          });
+   
+          if (response.ok) {
+            handleLogout()
+          }
+      }else(
+        handleLogout()
+      )
+
+      } catch (error) {
+        alert(error);
+      }
+  };
+
   useEffect(() => {
     if (isTimeoutRunning) {
       // Start the timeout when isTimeoutRunning is true
@@ -147,17 +171,6 @@ const Home = ({ userInfo, handleLogout }) => {
   const [energy, setEnergy] = useState(0);
   const [frequency, setFrequency] = useState(0);
   const [temperature, setTemperature] = useState(0);
-
-  useEffect(() => {
-    const textBox = document.getElementById('chargerID');
-
-    if (!ChargerID) {
-      const appendedValue = 'Please enter a valid URL';
-      textBox.value += appendedValue;
-    } else {
-      textBox.value += ChargerID;
-    }
-  }, [ChargerID]);
 
   // Last status
   async function FetchLaststatus(ChargerID){
@@ -484,7 +497,7 @@ const Home = ({ userInfo, handleLogout }) => {
         <div className="collapse navbar-collapse" id="navbarNav">
           <ul className="navbar-nav ml-auto">
             <li className="nav-item">
-              <form className="form-inline" onClick={handleLogout}>
+              <form className="form-inline"  onClick={() => handleLogouts(ChargerID)}>
                 <button type="button" className="btn btn-danger">Logout</button>
               </form>
             </li>
@@ -621,7 +634,7 @@ const Home = ({ userInfo, handleLogout }) => {
                             ))
                           ) : (
                             <tr>
-                              <td colSpan="5" style={{ marginTop: '50px', textAlign: 'center' }}>No devices found.</td>
+                              <td colSpan="4" style={{ marginTop: '50px', textAlign: 'center' }}>No devices found.</td>
                             </tr>
                           )
                         )}
@@ -726,14 +739,20 @@ const Home = ({ userInfo, handleLogout }) => {
                               </tr>
                             </thead>
                             <tbody>
-                              {historys.map((entry) => (
-                                <tr key={entry.serialNumber}>
-                                  <td>{entry.serialNumber}</td>
-                                  <td>{entry.currentTime}</td>
-                                  <td>{entry.chargerStatus}</td>
-                                  <td>{entry.errorCode}</td>
+                              {historys.length > 0 ? (
+                                historys.map((entry) => (
+                                  <tr key={entry.serialNumber}>
+                                    <td>{entry.serialNumber}</td>
+                                    <td>{entry.currentTime}</td>
+                                    <td>{entry.chargerStatus}</td>
+                                    <td>{entry.errorCode}</td>
+                                  </tr>
+                                ))
+                              ) : (
+                                <tr>
+                                  <td colSpan="4" style={{ marginTop: '50px', textAlign: 'center' }}>No error found.</td>
                                 </tr>
-                              ))}
+                              )}
                             </tbody>
                           </table>
                         </div>

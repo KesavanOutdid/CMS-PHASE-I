@@ -13,7 +13,7 @@ const Home = ({ userInfo, handleLogout }) => {
   const [timeoutId, setTimeoutId] = useState(null);
   const [isTimeoutRunning, setIsTimeoutRunning] = useState(false);
   
-  
+  // Logout server and client side
   const handleLogouts = async (ChargerID) => {
     try {
       if(ChargerID){
@@ -100,6 +100,8 @@ const Home = ({ userInfo, handleLogout }) => {
 
     setChargerID('');
     setSearchChargerID('');
+    // Show the rechargeWalletSection
+    document.getElementById('rechargeWalletSection').style.display = 'block';
     // Show the searchBoxSection
     document.getElementById('searchBoxSection').style.display = 'block';
     // Hide the statusSection (if needed)
@@ -131,6 +133,7 @@ const Home = ({ userInfo, handleLogout }) => {
         if (response.ok) {
           setSearchChargerID(searchChargerID);
           // Hide Search Box Section and show Status Section
+          document.getElementById('rechargeWalletSection').style.display = 'none';
           document.getElementById('searchBoxSection').style.display = 'none';
           document.getElementById('statusSection').style.display = 'block';
           document.getElementById('backSection').style.display = 'block';
@@ -142,6 +145,7 @@ const Home = ({ userInfo, handleLogout }) => {
           // alert(errorData.message);
           setShowAlerts(errorData.message);
           // Show Search Box Section and hide Status Section
+          document.getElementById('rechargeWalletSection').style.display = 'block';
           document.getElementById('searchBoxSection').style.display = 'block';
           document.getElementById('statusSection').style.display = 'none';
           document.getElementById('backSection').style.display = 'none';
@@ -152,6 +156,7 @@ const Home = ({ userInfo, handleLogout }) => {
       } catch (error) {
         alert(error);
         // Show Search Box Section and hide Status Section in case of an error
+        document.getElementById('rechargeWalletSection').style.display = 'block';
         document.getElementById('searchBoxSection').style.display = 'block';
         document.getElementById('statusSection').style.display = 'none';
         document.getElementById('backSection').style.display = 'none';
@@ -440,6 +445,7 @@ const Home = ({ userInfo, handleLogout }) => {
         setApiData(chargingSession,updatedUser);
         setSearchChargerID('');
         setChargerID('');
+        document.getElementById('rechargeWalletSection').style.display = 'block';
         document.getElementById('searchBoxSection').style.display = 'block';
         document.getElementById('statusSection').style.display = 'none';
         await fetchWallletBal(Username);
@@ -542,7 +548,7 @@ const Home = ({ userInfo, handleLogout }) => {
                           </div>
                         </div>
                     </div>
-                    <div className="col-12 col-sm-4">
+                    <div className="col-12 col-sm-4" id="rechargeWalletSection">
                       <div className="container mt-3">
                         <h2 className="card-title">Recharge Wallet</h2>
                         <form action="http://122.166.210.142:8052/pay" method="get" className="d-flex flex-column">

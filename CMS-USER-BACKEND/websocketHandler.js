@@ -113,15 +113,17 @@ const handleWebSocketConnection = (WebSocket, wss, wsConnections, ClientConnecti
                     const requestName = requestData[2];
 
                     if (requestType === 2 && requestName === "BootNotification") {
+                        const sendTo = wsConnections.get(clientIpAddress);
                         const response = [3, Identifier, {
                             "status": "Accepted",
                             "currentTime": new Date().toISOString(),
                             "interval": 10
                         }];
-                        ws.send(JSON.stringify(response));
+                        sendTo.send(JSON.stringify(response));
                     } else if (requestType === 2 && requestName === "StatusNotification") {
+                        const sendTo = wsConnections.get(clientIpAddress);
                         const response = [3, Identifier, {}];
-                        ws.send(JSON.stringify(response));
+                        sendTo.send(JSON.stringify(response));
 
                         const status = requestData[3].status;
                         const errorCode = requestData[3].errorCode;
@@ -194,14 +196,17 @@ const handleWebSocketConnection = (WebSocket, wss, wsConnections, ClientConnecti
                         }
 
                     } else if (requestType === 2 && requestName === "Heartbeat") {
+                        const sendTo = wsConnections.get(clientIpAddress);
                         const response = [3, Identifier, { "currentTime": formattedDate }];
-                        ws.send(JSON.stringify(response));
+                        sendTo.send(JSON.stringify(response));
                         await updateTime(uniqueIdentifier);
                     } else if (requestType === 2 && requestName === "Authorize") {
+                        const sendTo = wsConnections.get(clientIpAddress);
                         const response = [3, Identifier, { "idTagInfo": { "status": "Accepted", "parentIdTag": "B4A63CDB" } }];
-                        ws.send(JSON.stringify(response));
+                        sendTo.send(JSON.stringify(response));
                     } else if (requestType === 2 && requestName === "StartTransaction") {
                         let transId;
+                        const sendTo = wsConnections.get(clientIpAddress);
                         const generatedTransactionId = generateRandomTransactionId();
                         await db.collection('ev_details').findOneAndUpdate({ ip: clientIpAddress }, { $set: { transactionId: generatedTransactionId } }, { returnDocument: 'after' })
                             .then(updatedDocument => {
@@ -211,7 +216,7 @@ const handleWebSocketConnection = (WebSocket, wss, wsConnections, ClientConnecti
                                     "transactionId": transId,
                                     "idTagInfo": { "status": "Accepted", "parentIdTag": "B4A63CDB" }
                                 }];
-                                ws.send(JSON.stringify(response));
+                                sendTo.send(JSON.stringify(response));
                             }).catch(error => {
                                 console.error(`${uniqueIdentifier}: Error executing while updating transactionId:`, error);
                                 logger.error(`${uniqueIdentifier}: Error executing while updating transactionId:`, error);
@@ -223,8 +228,9 @@ const handleWebSocketConnection = (WebSocket, wss, wsConnections, ClientConnecti
                         getMeterValues(uniqueIdentifier).lastMeterValues = await captureMetervalues(Identifier, requestData, uniqueIdentifier, clientIpAddress);
                         console.log(`Last MeterValues for ${uniqueIdentifier}  : ${getMeterValues(uniqueIdentifier).lastMeterValues}`);
                     } else if (requestType === 2 && requestName === "StopTransaction") {
+                        const sendTo = wsConnections.get(clientIpAddress);
                         const response = [3, Identifier, {}];
-                        ws.send(JSON.stringify(response));
+                        sendTo.send(JSON.stringify(response));
                     }
                 }
             });
@@ -293,8 +299,9 @@ const handleWebSocketConnection = (WebSocket, wss, wsConnections, ClientConnecti
         }
 
         async function captureMetervalues(Identifier, requestData, uniqueIdentifier, clientIpAddress) {
+            const sendTo = wsConnections.get(clientIpAddress);
             const response = [3, Identifier, {}];
-            ws.send(JSON.stringify(response));
+            sendTo.send(JSON.stringify(response));
 
             let measurand;
             let value;

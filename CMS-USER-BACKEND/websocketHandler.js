@@ -645,16 +645,21 @@ async function updateSessionPriceToUser(user, price) {
         const userDocument = await usersCollection.findOne({ username: user });
 
         if (userDocument) {
-            // Subtract sessionPrice from walletBalance
             const updatedWalletBalance = userDocument.walletBalance - sessionPrice;
-            const result = await usersCollection.updateOne({ username: user }, { $set: { walletBalance: updatedWalletBalance } });
+            // Check if the updated wallet balance is NaN
+            if (!isNaN(updatedWalletBalance)) {
+                const result = await usersCollection.updateOne({ username: user }, { $set: { walletBalance: updatedWalletBalance } });
 
-            if (result.modifiedCount > 0) {
-                console.log(`Wallet balance updated for user ${user}.`);
-                return true;
+                if (result.modifiedCount > 0) {
+                    console.log(`Wallet balance updated for user ${user}.`);
+                    return true;
+                } else {
+                    console.log(`Wallet balance not updated for user ${user}.`);
+                    return false;
+                }
             } else {
-                console.log(`Wallet balance not updated for user ${user}.`);
-                return false;
+                console.log(`Invalid updated wallet balance for user ${user}.`);
+                return false; // Indicate invalid balance
             }
         } else {
             console.log(`User not found with username ${user}.`);

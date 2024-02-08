@@ -572,14 +572,14 @@ const Home = ({ userInfo, handleLogout }) => {
 
         {/* Charger Search Box and charger list table Section  start */}
         <div id="searchBoxSection">
-          <div className="col-md-12" >
+          <div className="col-md-12">
             <blockquote className="blockquote">
               <div className="card">
                 <div className="card-body">
                   <h2 className="card-title" style={{textAlign: 'center'}}>SEARCH DEVICE</h2>
                   <form onSubmit={handleSearchRequest}>
                     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
-                    <div className="form-group" style={{ width: '50%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <div className="form-group" style={{ width: '50%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                         <input type="text" style={{textAlign: 'center'}} className="form-control" id="chargerID" name="chargerID" value={searchChargerID} onChange={(e) => setChargerID(e.target.value)} placeholder="Enter DeviceID" />
                         <button type="submit" className="button-90" style={{marginTop: '10px'}}>Search</button>
                       </div>                    

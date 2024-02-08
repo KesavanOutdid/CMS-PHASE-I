@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 
-  const Login = ({ handleLogin }) => {
+const Login = ({ handleLogin }) => {
     const [loginUsername, setUsername] = useState('');
     const [loginPassword, setPassword] = useState('');
     const [message, setMessage] = useState('');

@@ -296,9 +296,9 @@ router.get('/pay', async function(req, res, next) {
             "merchantTransactionId": tx_uuid,
             "merchantUserId": process.env.merchantUserId,
             "amount": result,
-            "redirectUrl": `http://192.168.1.70:4040/pay-return-url?user=${RCuser}`,
+            "redirectUrl": `http://122.166.210.142:4040/pay-return-url?user=${RCuser}`,
             "redirectMode": "POST",
-            "callbackUrl": `http://192.168.1.70:4040/pay-return-url?user=${RCuser}`,
+            "callbackUrl": `http://122.166.210.142:4040/pay-return-url?user=${RCuser}`,
             "bankId": "SBIN",
             "paymentInstrument": {
                 "type": "PAY_PAGE"

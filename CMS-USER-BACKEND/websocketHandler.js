@@ -10,7 +10,7 @@ const getUniqueIdentifierFromRequest = (request) => {
     return request.url.split('/').pop();
 };
 
-const handleWebSocketConnection = (WebSocket, wss, wsConnections, ClientConnections, clients, OCPPResponseMap, meterValuesMap) => {
+const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, ClientConnections, clients, OCPPResponseMap, meterValuesMap) => {
     wss.on('connection', async(ws, req) => {
         const uniqueIdentifier = getUniqueIdentifierFromRequest(req);
         const clientIpAddress = req.connection.remoteAddress;
@@ -368,6 +368,25 @@ const handleWebSocketConnection = (WebSocket, wss, wsConnections, ClientConnecti
         connectWebSocket();
     });
 
+    // const broadcastMessage = (DeviceID, message, sender) => {
+    //     const data = {
+    //         DeviceID,
+    //         message,
+    //     };
+
+    //     const jsonMessage = JSON.stringify(data);
+    //     ClientConnections.forEach(ws => {
+    //         if (ws !== sender && ws.readyState === WebSocket.OPEN) {
+    //             ws.send(jsonMessage, (error) => {
+    //                 if (error) {
+    //                     console.log(`ChargerID: ${DeviceID} - Error while sending message to browser/client: ${error.message}`);
+    //                     logger.error(`ChargerID: ${DeviceID} - Error while sending message to browser/client: ${error.message}`);
+    //                 }
+    //             });
+    //         }
+    //     });
+    // };
+
     const broadcastMessage = (DeviceID, message, sender) => {
         const data = {
             DeviceID,
@@ -375,16 +394,20 @@ const handleWebSocketConnection = (WebSocket, wss, wsConnections, ClientConnecti
         };
 
         const jsonMessage = JSON.stringify(data);
-        ClientConnections.forEach(ws => {
-            if (ws !== sender && ws.readyState === WebSocket.OPEN) {
-                ws.send(jsonMessage, (error) => {
+
+        // Iterate over each client connected to another_wss and send the message
+        ClientWss.clients.forEach(client => {
+            // Check if the client is not the sender and its state is open
+            if (client !== sender && client.readyState === WebSocket.OPEN) {
+                client.send(jsonMessage, (error) => {
                     if (error) {
-                        console.log(`ChargerID: ${DeviceID} - Error while sending message to browser/client: ${error.message}`);
-                        logger.error(`ChargerID: ${DeviceID} - Error while sending message to browser/client: ${error.message}`);
+                        console.log(`Error sending message to client: ${error.message}`);
+                        // Handle error as needed
                     }
                 });
             }
         });
+
     };
 };
 

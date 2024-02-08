@@ -12,15 +12,7 @@ dotenv.config();
 const app = express();
 const httpServer = http.createServer(app);
 const webSocketServer = http.createServer();
-
-// Middleware to pass map modules to routes
-// app.use((req, res, next) => {
-//     req.wsConnections = initializeWebSocket.wsConnections;
-//     req.ClientConnections = initializeWebSocket.ClientConnections;
-//     req.clients = initializeWebSocket.clients;
-//     req.OCPPResponseMap = initializeWebSocket.OCPPResponseMap;
-//     next();
-// });
+const ClientWebSocketServer = http.createServer();
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -35,11 +27,17 @@ httpServer.listen(HTTP_PORT, () => {
 });
 
 // Initialize WebSocket connections and map modules on WebSocket server
-initializeWebSocket(webSocketServer);
+initializeWebSocket(webSocketServer, ClientWebSocketServer);
 
 // Start WebSocket server on port 8050
 const WS_PORT = process.env.WS_PORT;
 webSocketServer.listen(WS_PORT, () => {
     console.log(`WebSocket Server listening on port ${WS_PORT}`);
     logger.info(`WebSocket Server listening on port ${WS_PORT}`);
+});
+
+const WS_PORT_CLIENT = process.env.WS_PORT_CLIENT;
+ClientWebSocketServer.listen(WS_PORT_CLIENT, () => {
+    console.log(`Client WebSocket Server listening on port ${WS_PORT_CLIENT}`);
+    logger.info(`Client WebSocket Server listening on port ${WS_PORT_CLIENT}`);
 });

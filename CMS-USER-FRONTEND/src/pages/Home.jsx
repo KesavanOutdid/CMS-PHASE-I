@@ -213,7 +213,7 @@ const Home = ({ userInfo, handleLogout }) => {
   useEffect(() => {
     // Check if the socket is not already open and ChargerID is provided
     if (!socket && ChargerID) {
-      const newSocket = new WebSocket('ws://122.166.210.142:8050');
+      const newSocket = new WebSocket('ws://122.166.210.142:7050');
 
       newSocket.addEventListener('open', (event) => {
         console.log('WebSocket connection opened:', event);
@@ -796,7 +796,7 @@ const Home = ({ userInfo, handleLogout }) => {
         {/* Alert charger update Session Price To User start*/}
         {showAlert && (
           <div className="alert-overlay">
-            <div className="alert success" style={{width:'500px'}}>
+            <div className="alert success alerts" style={{width:'500px'}}>
               <span className="alertClose" onClick={handleCloseAlert}>X</span>
               <span className="alertText"><p><strong>ChargerID:</strong> {chargingSession.ChargerID}</p></span>
               <span className="alertText"><p><strong>Start Time:</strong> {chargingSession.StartTimestamp}</p></span>

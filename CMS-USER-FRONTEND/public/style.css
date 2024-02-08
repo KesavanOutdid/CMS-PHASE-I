@@ -193,11 +193,11 @@
 .alert {
     /* Your existing alert styles */
     /* Example styles */
-    background: #ffffff;
+    background: #d4edda;
     color: black;
     padding: 20px;
     border-radius: 25px;
-    border-color: darkblue;
+    border-color: #155724;
 }
 
 .alertClose {
@@ -221,17 +221,17 @@
     border: 1px solid #ddd;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     z-index: 1000;
-  }
-  
-  .alert-content {
+}
+
+.alert-content {
     text-align: center;
     display: flex;
     justify-content: space-between;
-  }
-  
-  .close-btn {
+}
+
+.close-btn {
     cursor: pointer;
     float: right;
     font-size: 30px;
     font-weight: bold;
-  }
+}

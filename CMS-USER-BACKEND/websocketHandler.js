@@ -1,8 +1,8 @@
 const logger = require('./logger');
 const { connectToDatabase } = require('./db');
 
-let charging_state = false;
-let sessionFlag = 0;
+// let charging_state = false;
+// let sessionFlag = 0;
 
 connectToDatabase();
 
@@ -10,15 +10,18 @@ const getUniqueIdentifierFromRequest = (request) => {
     return request.url.split('/').pop();
 };
 
-const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, ClientConnections, clients, OCPPResponseMap, meterValuesMap) => {
+const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, ClientConnections, clients, OCPPResponseMap, meterValuesMap, sessionFlags, charging_states) => {
     wss.on('connection', async(ws, req) => {
         const uniqueIdentifier = getUniqueIdentifierFromRequest(req);
         const clientIpAddress = req.connection.remoteAddress;
         let timeoutId;
+        let ChargingSessionID;
 
         wsConnections.set(clientIpAddress, ws);
         ClientConnections.add(ws);
         clients.set(ws, clientIpAddress);
+        sessionFlags.set(uniqueIdentifier, 0);
+        charging_states.set(uniqueIdentifier, false);
 
         const db = await connectToDatabase();
         let query = { ChargerID: uniqueIdentifier };
@@ -159,27 +162,35 @@ const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, Cli
                         }
 
                         if (status == 'Charging') {
-                            charging_state = true;
-                            sessionFlag = 1;
+                            //charging_state = true;
+                            //sessionFlag = 1;
+                            sessionFlags.set(uniqueIdentifier, 1);
+                            charging_states.set(uniqueIdentifier, true);
                             StartTimestamp = timestamp;
                         }
-                        if ((status == 'Finishing') && (charging_state)) {
-                            sessionFlag = 1;
+                        if ((status == 'Finishing') && (charging_states.get(uniqueIdentifier) == true)) {
+                            //sessionFlag = 1;
+                            sessionFlags.set(uniqueIdentifier, 1);
                             StopTimestamp = timestamp;
-                            charging_state = false;
+                            //charging_state = false;
+                            charging_states.set(uniqueIdentifier, false);
                         }
-                        if ((status == 'SuspendedEV') && (charging_state)) {
-                            sessionFlag = 1;
+                        if ((status == 'SuspendedEV') && (charging_states.get(uniqueIdentifier) == true)) {
+                            //sessionFlag = 1;
+                            sessionFlags.set(uniqueIdentifier, 1);
                             StopTimestamp = timestamp;
-                            charging_state = false;
+                            //charging_state = false;
+                            charging_states.set(uniqueIdentifier, false);
                         }
-                        if ((status == 'Faulted') && (charging_state)) {
-                            sessionFlag = 1;
+                        if ((status == 'Faulted') && (charging_states.get(uniqueIdentifier) == true)) {
+                            //sessionFlag = 1;
+                            sessionFlags.set(uniqueIdentifier, 1);
                             StopTimestamp = timestamp;
-                            charging_state = false;
+                            //charging_state = false;
+                            charging_states.set(uniqueIdentifier, false);
                         }
 
-                        if (sessionFlag == 1) {
+                        if (sessionFlags.get(uniqueIdentifier) == 1) {
                             let unit;
                             let sessionPrice;
                             const meterValues = getMeterValues(uniqueIdentifier);
@@ -191,8 +202,12 @@ const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, Cli
                                 console.log("StartMeterValues or LastMeterValues is not available.");
                             }
                             const user = await getUsername(uniqueIdentifier);
-                            handleChargingSession(uniqueIdentifier, StartTimestamp, StopTimestamp, unit, sessionPrice, user);
-                            sessionFlag = 0;
+                            ChargingSessionID = generateRandomTransactionId();
+                            const startTime = StartTimestamp;
+                            const stopTime = StopTimestamp;
+                            console.log('hi');
+                            handleChargingSession(uniqueIdentifier, startTime, stopTime, unit, sessionPrice, user, ChargingSessionID);
+                            sessionFlags.set(uniqueIdentifier, 0);
                         }
 
                     } else if (requestType === 2 && requestName === "Heartbeat") {
@@ -221,12 +236,15 @@ const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, Cli
                                 console.error(`${uniqueIdentifier}: Error executing while updating transactionId:`, error);
                                 logger.error(`${uniqueIdentifier}: Error executing while updating transactionId:`, error);
                             });
-                    } else if (requestType === 2 && requestName === "MeterValues" && !getMeterValues(uniqueIdentifier).firstMeterValues) {
-                        getMeterValues(uniqueIdentifier).firstMeterValues = await captureMetervalues(Identifier, requestData, uniqueIdentifier, clientIpAddress);
-                        console.log(`First MeterValues for ${uniqueIdentifier} : ${getMeterValues(uniqueIdentifier).firstMeterValues}`);
-                    } else if (requestType === 2 && requestName === "MeterValues" && getMeterValues(uniqueIdentifier).firstMeterValues) {
-                        getMeterValues(uniqueIdentifier).lastMeterValues = await captureMetervalues(Identifier, requestData, uniqueIdentifier, clientIpAddress);
-                        console.log(`Last MeterValues for ${uniqueIdentifier}  : ${getMeterValues(uniqueIdentifier).lastMeterValues}`);
+                    } else if (requestType === 2 && requestName === "MeterValues") {
+                        const UniqueChargingsessionId = ChargingSessionID; // Use the current session ID
+                        if (!getMeterValues(uniqueIdentifier).firstMeterValues) {
+                            getMeterValues(uniqueIdentifier).firstMeterValues = await captureMetervalues(Identifier, requestData, uniqueIdentifier, clientIpAddress, UniqueChargingsessionId);
+                            console.log(`First MeterValues for ${uniqueIdentifier} : ${getMeterValues(uniqueIdentifier).firstMeterValues}`);
+                        } else {
+                            getMeterValues(uniqueIdentifier).lastMeterValues = await captureMetervalues(Identifier, requestData, uniqueIdentifier, clientIpAddress, UniqueChargingsessionId);
+                            console.log(`Last MeterValues for ${uniqueIdentifier}  : ${getMeterValues(uniqueIdentifier).lastMeterValues}`);
+                        }
                     } else if (requestType === 2 && requestName === "StopTransaction") {
                         const sendTo = wsConnections.get(clientIpAddress);
                         const response = [3, Identifier, {}];
@@ -298,7 +316,7 @@ const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, Cli
             }
         }
 
-        async function captureMetervalues(Identifier, requestData, uniqueIdentifier, clientIpAddress) {
+        async function captureMetervalues(Identifier, requestData, uniqueIdentifier, clientIpAddress, UniqueChargingsessionId) {
             const sendTo = wsConnections.get(clientIpAddress);
             const response = [3, Identifier, {}];
             sendTo.send(JSON.stringify(response));
@@ -321,6 +339,7 @@ const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, Cli
             const currentTime = new Date().toISOString();
             keyValuePair.Timestamp = currentTime;
             keyValuePair.clientIP = clientIpAddress;
+            keyValuePair.SessionID = UniqueChargingsessionId;
             const ChargerValue = JSON.stringify(keyValuePair);
             await SaveChargerValue(ChargerValue);
             await updateTime(uniqueIdentifier);
@@ -527,7 +546,7 @@ async function updateTime(Device_ID) {
 }
 
 //insert charging session into the database
-async function handleChargingSession(chargerID, startTime, stopTime, TotalUnitConsumed, price, user) {
+async function handleChargingSession(chargerID, startTime, stopTime, TotalUnitConsumed, price, user, ChargingSessionID) {
     const db = await connectToDatabase();
     const collection = db.collection('charging_session');
     const sessionPrice = parseFloat(price).toFixed(2);
@@ -537,7 +556,6 @@ async function handleChargingSession(chargerID, startTime, stopTime, TotalUnitCo
         .sort({ _id: -1 })
         .limit(1)
         .next();
-
     if (existingDocument) {
         // ChargerID exists in charging_session table
         if (existingDocument.StopTimestamp === null) {
@@ -568,6 +586,7 @@ async function handleChargingSession(chargerID, startTime, stopTime, TotalUnitCo
 
             const newSession = {
                 ChargerID: chargerID,
+                ChargingSessionID: ChargingSessionID,
                 StartTimestamp: startTime !== null ? startTime : undefined,
                 StopTimestamp: stopTime !== null ? stopTime : undefined,
                 Unitconsumed: TotalUnitConsumed,
@@ -593,6 +612,7 @@ async function handleChargingSession(chargerID, startTime, stopTime, TotalUnitCo
         if (evDetailsDocument) {
             const newSession = {
                 ChargerID: chargerID,
+                ChargingSessionID: ChargingSessionID,
                 StartTimestamp: startTime !== null ? startTime : undefined,
                 StopTimestamp: stopTime !== null ? stopTime : undefined,
                 Unitconsumed: TotalUnitConsumed,
@@ -625,16 +645,21 @@ async function updateSessionPriceToUser(user, price) {
         const userDocument = await usersCollection.findOne({ username: user });
 
         if (userDocument) {
-            // Subtract sessionPrice from walletBalance
             const updatedWalletBalance = userDocument.walletBalance - sessionPrice;
-            const result = await usersCollection.updateOne({ username: user }, { $set: { walletBalance: updatedWalletBalance } });
+            // Check if the updated wallet balance is NaN
+            if (!isNaN(updatedWalletBalance)) {
+                const result = await usersCollection.updateOne({ username: user }, { $set: { walletBalance: updatedWalletBalance } });
 
-            if (result.modifiedCount > 0) {
-                console.log(`Wallet balance updated for user ${user}.`);
-                return true;
+                if (result.modifiedCount > 0) {
+                    console.log(`Wallet balance updated for user ${user}.`);
+                    return true;
+                } else {
+                    console.log(`Wallet balance not updated for user ${user}.`);
+                    return false;
+                }
             } else {
-                console.log(`Wallet balance not updated for user ${user}.`);
-                return false;
+                console.log(`Invalid updated wallet balance for user ${user}.`);
+                return false; // Indicate invalid balance
             }
         } else {
             console.log(`User not found with username ${user}.`);

@@ -444,11 +444,12 @@ const Home = ({ userInfo, handleLogout }) => {
         let chargingSession = data.value.chargingSession;
         let updatedUser = data.value.user;
         setApiData(chargingSession,updatedUser);
-        setSearchChargerID('');
-        setChargerID('');
-        document.getElementById('rechargeWalletSection').style.display = 'block';
-        document.getElementById('searchBoxSection').style.display = 'block';
-        document.getElementById('statusSection').style.display = 'none';
+        // setSearchChargerID('');
+        // setChargerID('');
+        handleSearchBox();
+        // document.getElementById('rechargeWalletSection').style.display = 'block';
+        // document.getElementById('searchBoxSection').style.display = 'block';
+        // document.getElementById('statusSection').style.display = 'none';
         await fetchWallletBal(Username);
         await EndChargingSession(Username);
       } else {

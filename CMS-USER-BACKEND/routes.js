@@ -440,7 +440,7 @@ async function getIpAndupdateUser(chargerID, user) {
                     console.log(`Failed to update current_or_active_user for ChargerID ${chargerID}`);
                 }
             } else {
-                console.log('User is undefined');
+                console.log('User is undefined - On stop there will be no user details');
             }
 
             return ip;

@@ -10,7 +10,7 @@ const getUniqueIdentifierFromRequest = (request) => {
     return request.url.split('/').pop();
 };
 
-const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, ClientConnections, clients, OCPPResponseMap, meterValuesMap, sessionFlags, charging_states) => {
+const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, ClientConnections, clients, OCPPResponseMap, meterValuesMap, sessionFlags, charging_states, startedChargingSet) => {
     wss.on('connection', async(ws, req) => {
         const uniqueIdentifier = getUniqueIdentifierFromRequest(req);
         const clientIpAddress = req.connection.remoteAddress;
@@ -20,8 +20,8 @@ const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, Cli
         wsConnections.set(clientIpAddress, ws);
         ClientConnections.add(ws);
         clients.set(ws, clientIpAddress);
-        sessionFlags.set(uniqueIdentifier, 0);
-        charging_states.set(uniqueIdentifier, false);
+        //sessionFlags.set(uniqueIdentifier, 0);
+        //charging_states.set(uniqueIdentifier, false);
 
         const db = await connectToDatabase();
         let query = { ChargerID: uniqueIdentifier };
@@ -161,12 +161,13 @@ const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, Cli
                             }
                         }
 
-                        if (status == 'Charging') {
+                        if (status == 'Charging' && !startedChargingSet.has(uniqueIdentifier)) {
                             //charging_state = true;
                             //sessionFlag = 1;
                             sessionFlags.set(uniqueIdentifier, 1);
                             charging_states.set(uniqueIdentifier, true);
                             StartTimestamp = timestamp;
+                            startedChargingSet.add(uniqueIdentifier);
                         }
                         if ((status == 'Finishing') && (charging_states.get(uniqueIdentifier) == true)) {
                             //sessionFlag = 1;
@@ -174,6 +175,7 @@ const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, Cli
                             StopTimestamp = timestamp;
                             //charging_state = false;
                             charging_states.set(uniqueIdentifier, false);
+                            startedChargingSet.delete(uniqueIdentifier);
                         }
                         if ((status == 'SuspendedEV') && (charging_states.get(uniqueIdentifier) == true)) {
                             //sessionFlag = 1;
@@ -181,6 +183,7 @@ const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, Cli
                             StopTimestamp = timestamp;
                             //charging_state = false;
                             charging_states.set(uniqueIdentifier, false);
+                            startedChargingSet.delete(uniqueIdentifier);
                         }
                         if ((status == 'Faulted') && (charging_states.get(uniqueIdentifier) == true)) {
                             //sessionFlag = 1;
@@ -188,6 +191,7 @@ const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, Cli
                             StopTimestamp = timestamp;
                             //charging_state = false;
                             charging_states.set(uniqueIdentifier, false);
+                            startedChargingSet.delete(uniqueIdentifier);
                         }
 
                         if (sessionFlags.get(uniqueIdentifier) == 1) {
@@ -205,7 +209,6 @@ const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, Cli
                             ChargingSessionID = generateRandomTransactionId();
                             const startTime = StartTimestamp;
                             const stopTime = StopTimestamp;
-                            console.log('hi');
                             handleChargingSession(uniqueIdentifier, startTime, stopTime, unit, sessionPrice, user, ChargingSessionID);
                             sessionFlags.set(uniqueIdentifier, 0);
                         }
@@ -355,7 +358,7 @@ const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, Cli
             const lastEnergy = lastValues || 0;
             console.log(startEnergy, lastEnergy);
             const differ = lastEnergy - startEnergy;
-            const unit = parseFloat(differ / 1000).toFixed(2);
+            const unit = parseFloat(differ / 1000).toFixed(3);
             console.log(`Unit: ${unit}`);
             const sessionPrice = await calculatePrice(unit);
             return { unit, sessionPrice };
@@ -369,7 +372,7 @@ const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, Cli
 
                 if (priceDocument) {
                     const pricePerUnit = priceDocument.UnitPrice; // Adjust this based on your actual MongoDB document structure
-                    const totalPrice = unit * pricePerUnit;
+                    const totalPrice = (unit * pricePerUnit).toFixed(2);
 
                     console.log(`Price per unit: RS.${pricePerUnit}`);
                     console.log(`Total price: RS.${totalPrice}`);

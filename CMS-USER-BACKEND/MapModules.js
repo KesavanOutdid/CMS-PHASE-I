@@ -5,5 +5,6 @@ const OCPPResponseMap = new Map();
 const meterValuesMap = new Map();
 const sessionFlags = new Map();
 const charging_states = new Map();
+const startedChargingSet = new Set();
 
-module.exports = { wsConnections, ClientConnections, clients, OCPPResponseMap, meterValuesMap, sessionFlags, charging_states };
+module.exports = { wsConnections, ClientConnections, clients, OCPPResponseMap, meterValuesMap, sessionFlags, charging_states, startedChargingSet };

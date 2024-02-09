@@ -451,7 +451,7 @@ const Home = ({ userInfo, handleLogout }) => {
         handleAlertLodingStop();
         handleSearchBox();
         await fetchWallletBal(Username);
-        await EndChargingSession(Username);
+        await EndChargingSession(ChargerID);
       } else {
         // Log or handle error
         console.error('Update failed:', response.statusText);

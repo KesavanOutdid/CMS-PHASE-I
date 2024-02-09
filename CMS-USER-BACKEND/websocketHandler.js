@@ -258,11 +258,11 @@ const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, Cli
 
             ws.on('close', (code, reason) => {
                 if (code === 1001) {
-                    console.error(`WebSocket connection closed from browser side`);
-                    logger.error(`WebSocket connection closed from browser side`);
+                    console.error(`ChargerID - ${uniqueIdentifier}: WebSocket connection closed from browser side`);
+                    logger.error(`ChargerID - ${uniqueIdentifier}: WebSocket connection closed from browser side`);
                 } else {
-                    console.error(`WebSocket connection closed with code ${code} and reason: ${reason}`);
-                    logger.error(`WebSocket connection closed with code ${code} and reason: ${reason}`);
+                    console.error(`ChargerID - ${uniqueIdentifier}: WebSocket connection closed with code ${code} and reason: ${reason}`);
+                    logger.error(`ChargerID - ${uniqueIdentifier}: WebSocket connection closed with code ${code} and reason: ${reason}`);
                 }
                 ClientConnections.delete(ws);
                 // Attempt to reconnect after a delay
@@ -648,10 +648,10 @@ async function updateSessionPriceToUser(user, price) {
         const userDocument = await usersCollection.findOne({ username: user });
 
         if (userDocument) {
-            const updatedWalletBalance = (parseFloat(userDocument.walletBalance) - parseFloat(sessionPrice)).toFixed(2);
+            const updatedWalletBalance = (userDocument.walletBalance - sessionPrice).toFixed(2);
             // Check if the updated wallet balance is NaN
             if (!isNaN(updatedWalletBalance)) {
-                const result = await usersCollection.updateOne({ username: user }, { $set: { walletBalance: updatedWalletBalance } });
+                const result = await usersCollection.updateOne({ username: user }, { $set: { walletBalance: parseFloat(updatedWalletBalance) } });
 
                 if (result.modifiedCount > 0) {
                     console.log(`Wallet balance updated for user ${user}.`);

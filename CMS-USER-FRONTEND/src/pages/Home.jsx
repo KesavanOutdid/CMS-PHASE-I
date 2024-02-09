@@ -264,6 +264,9 @@ const Home = ({ userInfo, handleLogout }) => {
             if(ChargerStatus === 'Available'){
               startTimeout();
             }
+            if(ChargerStatus === 'Charging'){
+              handleAlertLodingStop();
+            }
             // Update state variables to maintain the history
             if (errorCode !== 'NoError') {
               setHistory((historys) => [
@@ -325,6 +328,7 @@ const Home = ({ userInfo, handleLogout }) => {
         case 'StopTransaction':
           ChargerStatus = 'Finishing';
           CurrentTime = getCurrentTime();
+          handleAlertLodingStart();
           setTimeout(function () {
             updateSessionPriceToUser(ChargerID, user);
           }, 5000);
@@ -444,12 +448,8 @@ const Home = ({ userInfo, handleLogout }) => {
         let chargingSession = data.value.chargingSession;
         let updatedUser = data.value.user;
         setApiData(chargingSession,updatedUser);
-        // setSearchChargerID('');
-        // setChargerID('');
+        handleAlertLodingStop();
         handleSearchBox();
-        // document.getElementById('rechargeWalletSection').style.display = 'block';
-        // document.getElementById('searchBoxSection').style.display = 'block';
-        // document.getElementById('statusSection').style.display = 'none';
         await fetchWallletBal(Username);
         await EndChargingSession(Username);
       } else {
@@ -478,6 +478,17 @@ const Home = ({ userInfo, handleLogout }) => {
   const handleCloseAlert = () => {
     setShowAlert(false);
   };
+
+  // Alert loding function
+  const [showAlertLoding, setShowAlertLoding] = useState(false);
+
+  const handleAlertLodingStart = () => {
+    setShowAlertLoding(true);
+  }
+
+  const handleAlertLodingStop = () => {
+    setShowAlertLoding(false);
+  }
 
   // Get table data
   useEffect(() => {
@@ -794,6 +805,18 @@ const Home = ({ userInfo, handleLogout }) => {
         </div>
         {/* Charger status Section stop*/}
       </div>
+        {/* Loding alert */}
+        {showAlertLoding &&  (
+          <div className="alert-overlay-loding">
+            <div className="alert-loding success alerts" style={{width:'200px', textAlign:'center', padding:"20px"}}>
+            <div class="spinner-border text-success" role="status" style={{fontSize:'20px'}}>
+                <span class="visually-hidden">Loading...</span>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Loding alert */}
+
         {/* Alert charger update Session Price To User start*/}
         {showAlert && (
           <div className="alert-overlay">

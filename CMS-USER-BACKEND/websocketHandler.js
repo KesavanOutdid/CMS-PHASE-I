@@ -648,7 +648,7 @@ async function updateSessionPriceToUser(user, price) {
         const userDocument = await usersCollection.findOne({ username: user });
 
         if (userDocument) {
-            const updatedWalletBalance = userDocument.walletBalance - sessionPrice;
+            const updatedWalletBalance = (parseFloat(userDocument.walletBalance) - parseFloat(sessionPrice)).toFixed(2);
             // Check if the updated wallet balance is NaN
             if (!isNaN(updatedWalletBalance)) {
                 const result = await usersCollection.updateOne({ username: user }, { $set: { walletBalance: updatedWalletBalance } });

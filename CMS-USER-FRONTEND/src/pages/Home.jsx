@@ -843,7 +843,7 @@ const Home = ({ userInfo, handleLogout }) => {
 
         {/* Alert message start */}
         {errorData && (
-          <div className="alert alert-warning alert-dismissible fade show alert-container" role="alert" style={{width:'400px', textAlign:'center'}}>
+          <div className="alert alert-warning alert-dismissible fade show alert-container" role="alert" style={{width:'415px', textAlign:'center'}}>
             <strong>{errorData}</strong> 
             <button type="button" className="close" data-dismiss="alert" aria-label="Close" onClick={closeAlert} style={{top:'7px'}}>
               <span aria-hidden="true">&times;</span>

@@ -516,9 +516,6 @@ const Home = ({ userInfo, handleLogout }) => {
     // Update state to store the selected item
     setSelectedItem(dataItem);
   };
-  const handleCloseViewData = () => {
-    setSelectedItem(false);
-  };
 
   return (
     <div>
@@ -675,7 +672,7 @@ const Home = ({ userInfo, handleLogout }) => {
                                   </td>
                                   <td>{dataItem ? (
                                     <span>
-                                       <button type="button" className="btn btn-outline-primary" onClick={() => handleButtonClick(dataItem)}>View</button>
+                                      <button type="button" className="btn btn-outline-primary" data-toggle="modal" data-target="#myModal" onClick={() => handleButtonClick(dataItem)}>View</button>
                                     </span>
                                     ) : (
                                       <span>-</span>
@@ -684,19 +681,58 @@ const Home = ({ userInfo, handleLogout }) => {
                                 </tr>
                                 {/* Additional row to display more data */}
                                 {selectedItem === dataItem && (
-                                  <div className="alert-overlay">
-                                    <div className="alert success alerts table-container" style={{width:'500px', backgroundColor:'white', borderRadius:'0px'}}>
-                                      <span className="alertClose" onClick={handleCloseViewData}>X</span>
-                                      <div style={{textAlign:'center'}}>
-                                        <p><strong>DeviceID: </strong>{dataItem.ChargerID}</p>
-                                        <p><strong>TagID: </strong>{dataItem.ChargerTagID}</p>  
-                                        <p><strong>Charger Model: </strong>{dataItem.charger_model}</p>
-                                        <p><strong>Charger Type: </strong>{dataItem.charger_type}</p>
-                                        <p><strong>Current Phase: </strong>{dataItem.current_phase}</p>
-                                        <p><strong>Gun Connector: </strong>{dataItem.gun_connector}</p>
-                                        <p><strong>Max Current: </strong>{dataItem.max_current}</p>
-                                        <p><strong>Max Power: </strong>{dataItem.max_power}</p>
-                                        <p><strong>Socket Count: </strong>{dataItem.socket_count}</p>
+                                  <div className="container">
+                                    <div className="modal" id="myModal">
+                                      <div className="modal-dialog modal-dialog-centered">
+                                        <div className="modal-content">
+                                        <h3 className="text-primary" style={{textAlign:'center', paddingTop:'20px'}}>Charger Details</h3>
+                                          <div className="modal-header textCenter"></div>
+                                          <div className="modal-body">
+                                            <form>
+                                              <div className="form-row">
+                                                <div className="form-group col-md-6">
+                                                  <h5 className="modal-title" for="inputEmail4"><strong>DeviceID</strong></h5>
+                                                  <h5 className="form-control">{dataItem.ChargerID}</h5>
+                                                </div>
+                                                <div className="form-group col-md-6">
+                                                  <h5 className="modal-title" for="inputPassword4"><strong>TagID</strong></h5>
+                                                  <h5 className="form-control">{dataItem.ChargerTagID}</h5>
+                                                </div>
+                                                <div className="form-group col-md-6">
+                                                  <h5 className="modal-title" for="inputPassword4"><strong>Charger Model</strong></h5>
+                                                  <h5 className="form-control">{dataItem.charger_model}</h5>
+                                                </div>
+                                                <div className="form-group col-md-6">
+                                                  <h5 className="modal-title" for="inputPassword4"><strong>Charger Type</strong></h5>
+                                                  <h5 className="form-control">{dataItem.charger_type}</h5>
+                                                </div>
+                                                <div className="form-group col-md-6">
+                                                  <h5 className="modal-title" for="inputPassword4"><strong>Current Phase</strong></h5>
+                                                  <h5 className="form-control">{dataItem.current_phase}</h5>
+                                                </div>
+                                                <div className="form-group col-md-6">
+                                                  <h5 className="modal-title" for="inputPassword4"><strong>Gun Connector</strong></h5>
+                                                  <h5 className="form-control">{dataItem.gun_connector}</h5>
+                                                </div>
+                                                <div className="form-group col-md-6">
+                                                  <h5 className="modal-title" for="inputPassword4"><strong>Max Current</strong></h5>
+                                                  <h5 className="form-control">{dataItem.max_current}</h5>
+                                                </div>
+                                                <div className="form-group col-md-6">
+                                                  <h5 className="modal-title" for="inputPassword4"><strong>Max Power</strong></h5>
+                                                  <h5 className="form-control">{dataItem.max_power}</h5>
+                                                </div>
+                                                <div className="form-group col-md-6">
+                                                  <h5 className="modal-title" for="inputPassword4"><strong>Socket Count</strong></h5>
+                                                  <h5 className="form-control">{dataItem.socket_count}</h5>
+                                                </div>
+                                              </div>
+                                            </form>
+                                          </div>
+                                          <div class="modal-footer">
+                                            <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+                                          </div>
+                                        </div>
                                       </div>
                                     </div>
                                   </div>

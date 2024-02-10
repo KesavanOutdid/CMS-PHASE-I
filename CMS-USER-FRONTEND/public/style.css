@@ -282,3 +282,23 @@
   .otp-field input::-webkit-outer-spin-button {
     display: none;
   }
+
+  .modal-close {
+    color: #aaa;
+    line-height: 50px;
+    font-size: 80%;
+    position: absolute;
+    right: 0;
+    text-align: center;
+    top: 0;
+    width: 70px;
+    text-decoration: none;
+    &:hover {
+      color: black;
+    }
+  }
+
+  .textCenter{
+    text-align: center;
+  }
+  

@@ -301,4 +301,14 @@
   .textCenter{
     text-align: center;
   }
-  
+
+  .titleLabel{
+    font-weight: bolder;
+    color: #333;
+  }
+  .padTop20{
+    padding:20px 0px 0px 0px;
+  }
+  .marginLeft20{
+    margin: 0px 0px 0px 20px;
+  }

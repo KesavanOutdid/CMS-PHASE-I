@@ -625,8 +625,8 @@ const Home = ({ userInfo, handleLogout }) => {
             <blockquote className="blockquote">
               <div className="card">
                 <div className="card-body">
-                  <h2 className="card-title">Charger list</h2>
-                  <div className="table-container">
+                  <h2 className="card-title">Charger list</h2>                 
+                   <div className="table-container">
                     <table className="table table-striped" style={{textAlign:'center'}}>
                       <thead>
                         <tr>
@@ -679,16 +679,57 @@ const Home = ({ userInfo, handleLogout }) => {
                                     )}
                                   </td>
                                 </tr>
-                                {/* Additional row to display more data */}
                                 {selectedItem === dataItem && (
                                   <div className="container">
                                     <div className="modal" id="myModal">
-                                      <div className="modal-dialog modal-dialog-centered">
+                                      <div className="modal-dialog modal-lg modal-dialog-centered">
                                         <div className="modal-content">
                                         <h3 className="text-primary" style={{textAlign:'center', paddingTop:'20px'}}>Charger Details</h3>
                                           <div className="modal-header textCenter"></div>
-                                          <div className="modal-body">
-                                            <form>
+                                          <div className="modal-body marginLeft20">
+                                            <div className="row padTop20">
+                                                <div className="col-sm-4 text-left">
+                                                  <label className="titleLabel">DeviceID</label>
+                                                  <p>{dataItem.ChargerID}</p>
+                                                </div>                                                
+                                                <div className="col-sm-4 text-left">
+                                                  <label className="titleLabel">TagID</label>
+                                                    <p>{dataItem.ChargerTagID}</p>
+                                                </div>
+                                                <div className="col-sm-4 text-left">
+                                                  <label className="titleLabel">Charger Model</label>
+                                                  <p>{dataItem.charger_model}</p>
+                                                </div>
+                                            </div>
+                                            <div className="row padTop20">
+                                                <div className="col-sm-4 text-left">
+                                                <label className="titleLabel">Charger Type</label>
+                                                  <p>{dataItem.charger_type}</p>
+                                                </div>
+                                                <div className="col-sm-4 text-left">
+                                                  <label className="titleLabel">Current Phase</label>
+                                                  <p>{dataItem.current_phase}</p>
+                                                </div>
+                                                <div className="col-sm-4 text-left">
+                                                  <label className="titleLabel">Gun Connector</label>
+                                                    <p>{dataItem.gun_connector}</p>
+                                                  </div>
+                                            </div>
+                                            <div className="row padTop20">
+                                                <div className="col-sm-4 text-left">
+                                                  <label className="titleLabel">Max Current</label>
+                                                  <p>{dataItem.max_current}</p>
+                                                </div>
+                                                <div className="col-sm-4 text-left">
+                                                  <label className="titleLabel">Max Power</label>
+                                                  <p>{dataItem.max_power}</p>
+                                                </div>
+                                                <div className="col-sm-4 text-left">
+                                                  <label className="titleLabel">Socket Count</label>
+                                                  <p>{dataItem.socket_count}</p>
+                                                </div>
+                                            </div>
+                                            {/*                                            
                                               <div className="form-row">
                                                 <div className="form-group col-md-6">
                                                   <h5 className="modal-title" for="inputEmail4"><strong>DeviceID</strong></h5>
@@ -726,8 +767,7 @@ const Home = ({ userInfo, handleLogout }) => {
                                                   <h5 className="modal-title" for="inputPassword4"><strong>Socket Count</strong></h5>
                                                   <h5 className="form-control">{dataItem.socket_count}</h5>
                                                 </div>
-                                              </div>
-                                            </form>
+                                              </div> */}                                          
                                           </div>
                                           <div class="modal-footer">
                                             <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>

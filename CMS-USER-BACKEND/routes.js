@@ -26,7 +26,7 @@ router.post('/LogoutCheck', async(req, res) => {
         const latestStatus = await db.collection('ev_charger_status').findOne({ chargerID: chargerID });
 
         if (latestStatus) {
-            if (latestStatus.status === 'Available') {
+            if (latestStatus.status === 'Available' || latestStatus.status === 'Faulted') {
                 const collection = db.collection('ev_details');
                 const result = await collection.updateOne({ ChargerID: chargerID }, { $set: { current_or_active_user: null } });
 
@@ -80,14 +80,22 @@ router.get('/endChargingSession', async(req, res) => {
     try {
         const db = await database.connectToDatabase();
         const collection = db.collection('ev_details');
-        const result = await collection.updateOne({ ChargerID: ChargerID }, { $set: { current_or_active_user: null } });
+        const chargerStatus = await db.collection('ev_charger_status').findOne({ chargerID: ChargerID });
 
-        if (result.modifiedCount === 0) {
-            const errorMessage = 'Username not found to update end charging session';
-            return res.status(404).json({ message: errorMessage });
+        if (chargerStatus.status === 'Available' || chargerStatus.status === 'Faulted') {
+
+            const result = await collection.updateOne({ ChargerID: ChargerID }, { $set: { current_or_active_user: null } });
+
+            if (result.modifiedCount === 0) {
+                const errorMessage = 'Username not found to update end charging session';
+                return res.status(404).json({ message: errorMessage });
+            }
+
+            res.status(200).json({ message: 'End Charging session updated successfully.' });
+        } else {
+            console.log("endChargingSession - Status is not in Available");
+            res.status(200).json({ message: 'OK' });
         }
-
-        res.status(200).json({ message: 'End Charging session updated successfully.' });
 
     } catch (error) {
         console.error('Error updating end charging session:', error);
@@ -371,7 +379,7 @@ router.all('/pay-return-url', async function(req, res) {
 
 async function savePaymentDetails(data, user) {
     const responseCode = data.data.responseCode;
-    const amount = parseFloat((data.data.amount / 100).toFixed(2));
+    const amount = (data.data.amount / 100).toFixed(2);
     const transactionId = data.data.transactionId;
     const RCuser = user;
 
@@ -383,7 +391,7 @@ async function savePaymentDetails(data, user) {
         // Insert payment details
         const paymentResult = await paymentCollection.insertOne({
             user: RCuser,
-            RechargeAmt: amount,
+            RechargeAmt: parseFloat(amount),
             transactionId: transactionId,
             responseCode: responseCode,
             date_time: new Date().toLocaleString()
@@ -394,7 +402,7 @@ async function savePaymentDetails(data, user) {
         }
 
         // Update user's wallet
-        const updateResult = await userCollection.updateOne({ username: RCuser }, { $inc: { walletBalance: amount } });
+        const updateResult = await userCollection.updateOne({ username: RCuser }, { $inc: { walletBalance: parseFloat(amount) } });
 
         if (updateResult.modifiedCount === 1) {
             return true;

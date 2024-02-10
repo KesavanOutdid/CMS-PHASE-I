@@ -113,12 +113,16 @@ const Home = ({ userInfo, handleLogout }) => {
     await EndChargingSession(ChargerID);
   }
 
-  // Alert message (error)
+  // Alert message ( success, error)
+  const [successData, setShowAlertsSuccess] = useState(false);
+  const closeAlertSuccess = () => {
+    setShowAlertsSuccess(false);
+  };
   const [errorData, setShowAlerts] = useState(false);
   const closeAlert = () => {
     setShowAlerts(false);
   };
-
+  
   // Search charger Id
   const handleSearchRequest = async (e) => {
     e.preventDefault();
@@ -503,7 +507,18 @@ const Home = ({ userInfo, handleLogout }) => {
         setError('Error fetching data. Please try again.');
         setLoading(false);
       });
-}, []);
+  }, []);
+
+  // View data
+  const [selectedItem, setSelectedItem] = useState(null);
+
+  const handleButtonClick = (dataItem) => {
+    // Update state to store the selected item
+    setSelectedItem(dataItem);
+  };
+  const handleCloseViewData = () => {
+    setSelectedItem(false);
+  };
 
   return (
     <div>
@@ -570,7 +585,14 @@ const Home = ({ userInfo, handleLogout }) => {
                             <button type="submit" value="1000" name="amount" className="button-45 mr-2">Rs.1000</button>
                             <button type="submit" value="2000" name="amount" className="button-45">Rs.2000</button>
                           </div>
-                          <input type="text" name="RCuser" value={Username} style={{ display: 'none' }} readOnly/>
+                          <input type="hidden" name="RCuser" value={Username}/>
+                        </form>
+                        <form action="http://122.166.210.142:8052/pay" method="get" className="d-flex flex-column" style={{ paddingTop: '10px' }}>
+                          <div className="d-flex justify-content-center">
+                            <input type="number" style={{ textAlign: 'center'}} min="500" name="amount"  className="form-control" placeholder="Enter Amount" required/> &nbsp;
+                              <button type="submit" className="button-90">Submit</button>
+                          </div>
+                          <input type="hidden" name="RCuser" value={Username}/>
                         </form>
                       </div>
                     </div>
@@ -592,7 +614,7 @@ const Home = ({ userInfo, handleLogout }) => {
                   <form onSubmit={handleSearchRequest}>
                     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
                       <div className="form-group" style={{ width: '50%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <input type="text" style={{textAlign: 'center'}} className="form-control" id="chargerID" name="chargerID" value={searchChargerID} onChange={(e) => setChargerID(e.target.value)} placeholder="Enter DeviceID" />
+                        <input type="text" style={{textAlign: 'center'}} className="form-control" id="chargerID" name="chargerID" value={searchChargerID} onChange={(e) => setChargerID(e.target.value)} placeholder="Enter DeviceID" required />
                         <button type="submit" className="button-90" style={{marginTop: '10px'}}>Search</button>
                       </div>                    
                     </div>
@@ -613,8 +635,9 @@ const Home = ({ userInfo, handleLogout }) => {
                         <tr>
                           <th>Sl.No</th>
                           <th>DeviceID</th>
-                          <th>Status</th>
+                          <th>TagID</th>
                           <th>Type</th>
+                          <th>Option</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -629,27 +652,56 @@ const Home = ({ userInfo, handleLogout }) => {
                         ) : (
                           Array.isArray(data) && data.length > 0 ? (
                             data.map((dataItem, index) => (
-                              <tr key={index}>
-                                <td>{index + 1}</td>
-                                <td>{dataItem.ChargerID ? (
-                                  <span>{dataItem.ChargerID}</span>
-                                ) : (
-                                  <span>-</span>
+                              <React.Fragment key={index}>
+                                <tr >
+                                  <td>{index + 1}</td>
+                                  <td>{dataItem.ChargerID ? (
+                                    <span>{dataItem.ChargerID}</span>
+                                  ) : (
+                                    <span>-</span>
+                                  )}
+                                  </td>
+                                  <td>{dataItem.ChargerTagID ? (
+                                    <span>{dataItem.ChargerTagID}</span>
+                                  ) : (
+                                    <span>-</span>
+                                  )}
+                                  </td>
+                                  <td>{dataItem.charger_type ? (
+                                    <span>{dataItem.charger_type}</span>
+                                  ) : (
+                                    <span>-</span>
+                                  )}
+                                  </td>
+                                  <td>{dataItem ? (
+                                    <span>
+                                       <button type="button" className="btn btn-outline-primary" onClick={() => handleButtonClick(dataItem)}>View</button>
+                                    </span>
+                                    ) : (
+                                      <span>-</span>
+                                    )}
+                                  </td>
+                                </tr>
+                                {/* Additional row to display more data */}
+                                {selectedItem === dataItem && (
+                                  <div className="alert-overlay">
+                                    <div className="alert success alerts table-container" style={{width:'500px', backgroundColor:'white', borderRadius:'0px'}}>
+                                      <span className="alertClose" onClick={handleCloseViewData}>X</span>
+                                      <div style={{textAlign:'center'}}>
+                                        <p><strong>DeviceID: </strong>{dataItem.ChargerID}</p>
+                                        <p><strong>TagID: </strong>{dataItem.ChargerTagID}</p>  
+                                        <p><strong>Charger Model: </strong>{dataItem.charger_model}</p>
+                                        <p><strong>Charger Type: </strong>{dataItem.charger_type}</p>
+                                        <p><strong>Current Phase: </strong>{dataItem.current_phase}</p>
+                                        <p><strong>Gun Connector: </strong>{dataItem.gun_connector}</p>
+                                        <p><strong>Max Current: </strong>{dataItem.max_current}</p>
+                                        <p><strong>Max Power: </strong>{dataItem.max_power}</p>
+                                        <p><strong>Socket Count: </strong>{dataItem.socket_count}</p>
+                                      </div>
+                                    </div>
+                                  </div>
                                 )}
-                                </td>
-                                <td>{dataItem.ChargerTagID ? (
-                                  <span>{dataItem.ChargerTagID}</span>
-                                ) : (
-                                  <span>-</span>
-                                )}
-                                </td>
-                                <td>{dataItem.charger_type ? (
-                                  <span>{dataItem.charger_type}</span>
-                                ) : (
-                                  <span>-</span>
-                                )}
-                                </td>
-                              </tr>
+                              </React.Fragment>
                             ))
                           ) : (
                             <tr>
@@ -666,7 +718,7 @@ const Home = ({ userInfo, handleLogout }) => {
           </div>
         </div>
         {/* Charger Search Box and charger list table Section end */}
-
+      
         {/* Charger status Section  start*/}
         <div className="col-md-12" id="statusSection" style={{ display: 'none' }}>
           <blockquote className="blockquote">
@@ -805,11 +857,23 @@ const Home = ({ userInfo, handleLogout }) => {
         </div>
         {/* Charger status Section stop*/}
       </div>
+
+        {/* Alert success message start */}
+        {successData && (
+          <div className="alert-overlay">
+            <div className="alert success alerts" style={{width:'500px', textAlign:'center'}}>
+              <span className="alertClose" onClick={closeAlertSuccess}>X</span>
+              <span className="alertText" style={{fontSize:'20px'}}><strong style={{color:'#155724'}}>{successData}</strong></span>
+            </div>
+          </div>
+        )}
+        {/* Alert success message end */}
+
         {/* Loding alert */}
         {showAlertLoding &&  (
           <div className="alert-overlay-loding">
             <div className="alert-loding success alerts" style={{width:'200px', textAlign:'center', padding:"20px"}}>
-            <div class="spinner-border text-success" role="status" style={{fontSize:'20px'}}>
+              <div class="spinner-border text-success" role="status" style={{fontSize:'20px'}}>
                 <span class="visually-hidden">Loading...</span>
               </div>
             </div>
@@ -841,7 +905,7 @@ const Home = ({ userInfo, handleLogout }) => {
         )}
         {/* Alert charger update Session Price To User end*/}
 
-        {/* Alert message start */}
+        {/* Alert error message start */}
         {errorData && (
           <div className="alert alert-warning alert-dismissible fade show alert-container" role="alert" style={{width:'415px', textAlign:'center'}}>
             <strong>{errorData}</strong> 
@@ -850,7 +914,7 @@ const Home = ({ userInfo, handleLogout }) => {
             </button>
           </div>
         )}
-        {/* Alert message end*/}
+        {/* Alert error message end*/}
     </div>
   );
 };

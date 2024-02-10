@@ -1,13 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import { useHistory, Link } from 'react-router-dom';
 
 const Register = () => {
     const [registerUsername, setUserName] = useState('');
     const [registerPhone, setUserPhone] = useState('');
-    const [registerPassword, setPassword] = useState('');
+	const [registerPasswords, setRegisterPasswords] = useState(['', '', '', '']);
+	const inputRefs = useRef(Array.from({ length: 4 }, () => React.createRef()));
+	// Joining the array elements into a single string
+	const registerPassword = registerPasswords.join('');
+	//  alert(registerPassword);
     const [message, setMessage] = useState('');
     const history = useHistory();
+
+	// password pin change
+	const handleChange = (index, value) => {
+		if (/^\d?$/.test(value)) {
+		  const newPasswords = [...registerPasswords];
+		  newPasswords[index] = value;
+		  setRegisterPasswords(newPasswords);
+	
+		  if (value === '' && index > 0) {
+			inputRefs.current[index - 1].current.focus(); // Move focus backward when deleting a digit
+		  } else if (index < inputRefs.current.length - 1 && value !== '') {
+			inputRefs.current[index + 1].current.focus(); // Move focus forward when entering a digit
+		  }
+		}
+	};
 
 	// Register new user 
 	const handleRegister = async (e) => {
@@ -81,10 +100,13 @@ const Register = () => {
 
 									<div className="mb-3">
 										<label className="mb-2 text-muted" htmlFor="password">Password</label>
-										<input type="password" className="form-control"  value={registerPassword} onChange={(e) => setPassword(e.target.value)} required/>
-										<div className="invalid-feedback">
-											Password is required
+										<div className="otp-field mb-4">
+											{registerPasswords.map((value, index) => (
+											   <input key={index} ref={inputRefs.current[index]} type="number" className="form-control"  value={value}
+												onChange={(e) => handleChange(index, e.target.value)} required maxLength={1}/>
+											))}
 										</div>
+										<div className="invalid-feedback">Password is required</div>
 									</div>
 
 									<div className="align-items-center d-flex">

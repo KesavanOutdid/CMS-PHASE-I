@@ -1,11 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 
 const Login = ({ handleLogin }) => {
     const [loginUsername, setUsername] = useState('');
-    const [loginPassword, setPassword] = useState('');
+    // const [loginPassword, setPassword] = useState('');
+    const [loginPasswords, setLoginPassword] = useState(['', '', '', '']);
+	const inputRefs = useRef(Array.from({ length: 4 }, () => React.createRef()));
+	// Joining the array elements into a single string
+	const loginPassword = loginPasswords.join('');
+	//  alert(registerPassword);
     const [message, setMessage] = useState('');
     
+    // password pin change
+	const handleChange = (index, value) => {
+		if (/^\d?$/.test(value)) {
+		  const newPasswords = [...loginPasswords];
+		  newPasswords[index] = value;
+		  setLoginPassword(newPasswords);
+	
+		  if (value === '' && index > 0) {
+			inputRefs.current[index - 1].current.focus(); // Move focus backward when deleting a digit
+		  } else if (index < inputRefs.current.length - 1 && value !== '') {
+			inputRefs.current[index + 1].current.focus(); // Move focus forward when entering a digit
+		  }
+		}
+	};
+
     // Check login credentials
     const handleLoginRequest = async (e) => {
         e.preventDefault();
@@ -72,7 +92,13 @@ const Login = ({ handleLogin }) => {
 
                                     <div className="mb-3">
                                         <label className="mb-2 text-muted" htmlFor="password">Password</label>
-                                        <input type="password" className="form-control" value={loginPassword} onChange={(e) => setPassword(e.target.value)} required />
+                                        <div className="otp-field mb-4">
+											{loginPasswords.map((value, index) => (
+											   <input key={index} ref={inputRefs.current[index]} type="password" className="form-control"  value={value}
+												onChange={(e) => handleChange(index, e.target.value)} required maxLength={1}/>
+											))}
+										</div>
+                                        {/* <input type="password" className="form-control" value={loginPassword} onChange={(e) => setPassword(e.target.value)} required /> */}
                                         <div className="invalid-feedback">Password is required</div>
                                     </div>
 

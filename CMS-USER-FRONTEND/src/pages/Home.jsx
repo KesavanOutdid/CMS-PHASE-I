@@ -10,7 +10,7 @@ const Home = ({ userInfo, handleLogout }) => {
   const [ChargerID, setSearchChargerID] = useState('');
   const Username = userInfo.username;
 
-  const [timeoutId, setTimeoutId] = useState(null);
+  // const [timeoutId, setTimeoutId] = useState(null);
   const [isTimeoutRunning, setIsTimeoutRunning] = useState(false);
   
   // Logout server and client side
@@ -45,10 +45,10 @@ const Home = ({ userInfo, handleLogout }) => {
         handleSearchBox();
         setShowAlerts('Timeout, Please re-initiate the charger !');
         stopTimeout();
-      }, 45000); // Example: 5 seconds delay
+      }, 45000); // Example: 5 seconds delay  
 
       // Update timeoutId state with the ID returned by setTimeout
-      setTimeoutId(id);
+      // setTimeoutId(id);
 
       // Cleanup function to stop the timeout when component unmounts or isTimeoutRunning becomes false
       return () => clearTimeout(id);
@@ -521,7 +521,7 @@ const Home = ({ userInfo, handleLogout }) => {
     <div>
       {/* Navbar */}
       <nav className="navbar navbar-expand-lg navbar-light bg-light">
-        <span className="navbar-brand">EV Power</span>
+        <span className="navbar-brand"><img src="img/EV_Power_16-12-2023.png" alt="logo" width="120"/></span>
         <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
           <span className="navbar-toggler-icon"></span>
         </button>
@@ -529,7 +529,7 @@ const Home = ({ userInfo, handleLogout }) => {
           <ul className="navbar-nav ml-auto">
             <li className="nav-item">
               <form className="form-inline"  onClick={() => handleLogouts(ChargerID)}>
-                <button type="button" className="btn btn-danger">Logout</button>
+                <button type="button" className="button-br btn btn-outline-danger">Logout</button>
               </form>
             </li>
           </ul>
@@ -542,11 +542,11 @@ const Home = ({ userInfo, handleLogout }) => {
             <div className="row">
               <div className="col-md-6 mb-2">
                 <h2 style={{ paddingTop: '10px' }}>
-                  <strong>Welcome </strong> <span className="text-primary">{Username},</span>
+                  <strong>Welcome </strong> <span className="text-colors" >{Username},</span>
                 </h2>
               </div>
               <div className="col-md-6 mb-2 pr-3">
-                <button type="submit" className=" button-90 float-end" id="backSection" style={{ display: 'none' }} onClick={handleSearchBox}>Back</button>
+                <button type="submit" className="button-br btn btn-outline-primary float-end" id="backSection" style={{ display: 'none' }} onClick={handleSearchBox}>Back</button>
               </div>
             </div>
           </blockquote>
@@ -559,7 +559,7 @@ const Home = ({ userInfo, handleLogout }) => {
           <blockquote className="blockquote">
             <div className="card mb-4">
               <div className="card-body">
-                <div className="container" style={{textAlign:'center'}}>
+                <div className="container text-center">
                   <div className="row justify-content-around">
                     <div className="col-12 col-sm-4">
                         <div className="container mt-3">
@@ -586,8 +586,8 @@ const Home = ({ userInfo, handleLogout }) => {
                         </form>
                         <form action="http://122.166.210.142:8052/pay" method="get" className="d-flex flex-column" style={{ paddingTop: '10px' }}>
                           <div className="d-flex justify-content-center">
-                            <input type="number" style={{ textAlign: 'center'}} min="500" name="amount"  className="form-control" placeholder="Enter Amount" required/> &nbsp;
-                              <button type="submit" className="button-90">Submit</button>
+                            <input type="number" min="500" name="amount"  className="form-control inputBorder text-center" placeholder="Enter Amount" required/> &nbsp;
+                              <button type="submit" className="button-br btn btn-outline-success">Submit</button>
                           </div>
                           <input type="hidden" name="RCuser" value={Username}/>
                         </form>
@@ -607,12 +607,12 @@ const Home = ({ userInfo, handleLogout }) => {
             <blockquote className="blockquote">
               <div className="card">
                 <div className="card-body">
-                  <h2 className="card-title" style={{textAlign: 'center'}}>SEARCH DEVICE</h2>
+                  <h2 className="card-title text-center"><span className="text-colors">SEARCH</span> DEVICE</h2>
                   <form onSubmit={handleSearchRequest}>
                     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
-                      <div className="form-group" style={{ width: '50%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <input type="text" style={{textAlign: 'center'}} className="form-control" id="chargerID" name="chargerID" value={searchChargerID} onChange={(e) => setChargerID(e.target.value)} placeholder="Enter DeviceID" required />
-                        <button type="submit" className="button-90" style={{marginTop: '10px'}}>Search</button>
+                      <div className="form-group formGroup">
+                        <input type="text"  className="form-control text-center inputBorder" id="chargerID" name="chargerID" value={searchChargerID} onChange={(e) => setChargerID(e.target.value)} placeholder="Enter DeviceID" required />
+                        <button type="submit" className="button-br btn btn-outline-success srcMarginTop">Search</button>
                       </div>                    
                     </div>
                   </form>
@@ -625,10 +625,142 @@ const Home = ({ userInfo, handleLogout }) => {
             <blockquote className="blockquote">
               <div className="card">
                 <div className="card-body">
-                  <h2 className="card-title">Charger list</h2>                 
+                  <h2 className="card-title">Charger list</h2> 
+                  {/* <div className="wrapper center-block">
+                    <div className="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
+                      <div className="panel panel-default">
+                        <div className="panel-heading active" role="tab" id="headingOne">
+                          <h4 className="panel-title">
+                            <div className="row text-center text-padding">
+                              <div className="col-sm-2 col-12">Sl.No</div>
+                              <div className="col-sm-3 col-12"> DeviceID</div>
+                              <div className="col-sm-3 col-12"> TagID</div>
+                              <div className="col-sm-2 col-12">Type</div>
+                              <div className="col-sm-2 col-12">Option</div>
+                            </div>
+                          </h4>
+                        </div>                
+                      </div>                           
+                    </div>
+                  </div>
+                    {loading ? (
+                      <div className="wrapper center-block">
+                        <div className="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
+                          <div className="panel panel-default">
+                            <div className="panel-heading active" role="tab" id="headingOne">
+                              <h4 className="panel-title">
+                                <div className="row text-center text-padding">
+                                  <div className="col-sm-12">Loading...</div>
+                                </div>
+                              </h4>
+                            </div>                
+                          </div>                           
+                        </div>
+                      </div>
+                    ) : error ? (
+                      <div className="wrapper center-block">
+                        <div className="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
+                          <div className="panel panel-default">
+                            <div className="panel-heading active" role="tab" id="headingOne">
+                              <h4 className="panel-title">
+                                <div className="row text-center text-padding">
+                                  <div className="col-sm-12">Error:</div>
+                                </div>
+                              </h4>
+                            </div>
+                          </div>                
+                        </div>  
+                      </div>                         
+                    ) : (   
+                      Array.isArray(data) && data.length > 0 ? (
+                      data.map((dataItem, index) => (
+                      <React.Fragment key={index}>
+                        <div className="wrapper center-block">
+                          <div className="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
+                            <div className="panel panel-default">
+                              <div className="panel-heading active" role="tab" id="headingOne">
+                                <h4 className="panel-title" style={{paddingBottom:'0px'}}>
+                                  <div className="row text-center text-padding font-size">
+                                    <div className="col-sm-2">{index + 1}</div>
+                                    <div className="col-sm-3">{dataItem.ChargerID ? (<span>{dataItem.ChargerID}</span>) : ( <span>-</span>)}</div>
+                                    <div className="col-sm-3">{dataItem.ChargerTagID ? ( <span>{dataItem.ChargerTagID}</span> ) : (<span>-</span>)}</div>
+                                    <div className="col-sm-2">{dataItem.charger_type ? (<span>{dataItem.charger_type}</span>  ) : ( <span>-</span>)}</div>
+                                    <div className="col-sm-2">{dataItem ? (<span><button type="button" className="button-br btn btn-outline-success" data-toggle="modal" data-target="#myModal" onClick={() => handleButtonClick(dataItem)}>View</button></span>) : (<span>-</span>)}</div>
+                                  </div>
+                                </h4>
+                              </div>                
+                            </div>                            
+                          </div>
+                        </div>
+                        
+                        {selectedItem === dataItem && (
+                          <div className="container">
+                            <div className="modal" id="myModal">
+                              <div className="modal-dialog modal-lg modal-dialog-centered">
+                                <div className="modal-content">
+                                  <h3 className="text-primary text-center padding20">Charger Details</h3>
+                                  <div className="modal-header textCenter"></div>
+                                  <div className="modal-body marginLeft20">
+                                    <div className="row padTop20">
+                                      <div className="col-sm-4 text-left">
+                                        <label className="titleLabel">DeviceID</label>
+                                        <p>{dataItem.ChargerID}</p>
+                                      </div>                                                
+                                      <div className="col-sm-4 text-left">
+                                        <label className="titleLabel">TagID</label>
+                                        <p>{dataItem.ChargerTagID}</p>
+                                      </div>
+                                      <div className="col-sm-4 text-left">
+                                        <label className="titleLabel">Charger Model</label>
+                                        <p>{dataItem.charger_model}</p>
+                                      </div>
+                                    </div><hr/>
+                                    <div className="row padTop20">
+                                      <div className="col-sm-4 text-left">
+                                        <label className="titleLabel">Charger Type</label>
+                                        <p>{dataItem.charger_type}</p>
+                                      </div>
+                                      <div className="col-sm-4 text-left">
+                                        <label className="titleLabel">Current Phase</label>
+                                        <p>{dataItem.current_phase}</p>
+                                      </div>
+                                      <div className="col-sm-4 text-left">
+                                        <label className="titleLabel">Gun Connector</label>
+                                        <p>{dataItem.gun_connector}</p>
+                                      </div>
+                                    </div><hr/>
+                                    <div className="row padTop20">
+                                      <div className="col-sm-4 text-left">
+                                        <label className="titleLabel">Max Current</label>
+                                        <p>{dataItem.max_current}</p>
+                                      </div>
+                                      <div className="col-sm-4 text-left">
+                                        <label className="titleLabel">Max Power</label>
+                                        <p>{dataItem.max_power}</p>
+                                      </div>
+                                      <div className="col-sm-4 text-left">
+                                        <label className="titleLabel">Socket Count</label>
+                                        <p>{dataItem.socket_count}</p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="modal-footer">
+                                    <button type="button" className="btn btn-danger" data-dismiss="modal">Close</button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </React.Fragment>
+                    ))
+                  ) : (
+                    <div className="col-sm-12">No devices found.</div>
+                    )
+                  )} */}
                    <div className="table-container">
-                    <table className="table table-striped" style={{textAlign:'center'}}>
-                      <thead>
+                    <table className="table table-hover text-center">
+                      <thead className="sticky-md-top">
                         <tr>
                           <th>Sl.No</th>
                           <th>DeviceID</th>
@@ -650,7 +782,7 @@ const Home = ({ userInfo, handleLogout }) => {
                           Array.isArray(data) && data.length > 0 ? (
                             data.map((dataItem, index) => (
                               <React.Fragment key={index}>
-                                <tr >
+                                <tr>
                                   <td>{index + 1}</td>
                                   <td>{dataItem.ChargerID ? (
                                     <span>{dataItem.ChargerID}</span>
@@ -672,7 +804,7 @@ const Home = ({ userInfo, handleLogout }) => {
                                   </td>
                                   <td>{dataItem ? (
                                     <span>
-                                      <button type="button" className="btn btn-outline-primary" data-toggle="modal" data-target="#myModal" onClick={() => handleButtonClick(dataItem)}>View</button>
+                                      <button type="button" className="button-br btn btn-outline-success" data-toggle="modal" data-target="#myModal" onClick={() => handleButtonClick(dataItem)}>View</button>
                                     </span>
                                     ) : (
                                       <span>-</span>
@@ -684,10 +816,10 @@ const Home = ({ userInfo, handleLogout }) => {
                                     <div className="modal" id="myModal">
                                       <div className="modal-dialog modal-lg modal-dialog-centered">
                                         <div className="modal-content">
-                                        <h3 className="text-primary" style={{textAlign:'center', paddingTop:'20px'}}>Charger Details</h3>
-                                          <div className="modal-header textCenter"></div>
+                                        <h3 className="text-colors text-center paddingTop">CHARGER DETAILS</h3>
+                                          {/* <div className="modal-header textCenter"></div> */}
                                           <div className="modal-body marginLeft20">
-                                            <div className="row padTop20">
+                                            <div className="row padTop20" style={{borderBottom:'1px'}}>
                                                 <div className="col-sm-4 text-left">
                                                   <label className="titleLabel">DeviceID</label>
                                                   <p>{dataItem.ChargerID}</p>
@@ -700,7 +832,7 @@ const Home = ({ userInfo, handleLogout }) => {
                                                   <label className="titleLabel">Charger Model</label>
                                                   <p>{dataItem.charger_model}</p>
                                                 </div>
-                                            </div>
+                                            </div><hr/>
                                             <div className="row padTop20">
                                                 <div className="col-sm-4 text-left">
                                                 <label className="titleLabel">Charger Type</label>
@@ -714,7 +846,7 @@ const Home = ({ userInfo, handleLogout }) => {
                                                   <label className="titleLabel">Gun Connector</label>
                                                     <p>{dataItem.gun_connector}</p>
                                                   </div>
-                                            </div>
+                                            </div><hr/>
                                             <div className="row padTop20">
                                                 <div className="col-sm-4 text-left">
                                                   <label className="titleLabel">Max Current</label>
@@ -729,48 +861,9 @@ const Home = ({ userInfo, handleLogout }) => {
                                                   <p>{dataItem.socket_count}</p>
                                                 </div>
                                             </div>
-                                            {/*                                            
-                                              <div className="form-row">
-                                                <div className="form-group col-md-6">
-                                                  <h5 className="modal-title" for="inputEmail4"><strong>DeviceID</strong></h5>
-                                                  <h5 className="form-control">{dataItem.ChargerID}</h5>
-                                                </div>
-                                                <div className="form-group col-md-6">
-                                                  <h5 className="modal-title" for="inputPassword4"><strong>TagID</strong></h5>
-                                                  <h5 className="form-control">{dataItem.ChargerTagID}</h5>
-                                                </div>
-                                                <div className="form-group col-md-6">
-                                                  <h5 className="modal-title" for="inputPassword4"><strong>Charger Model</strong></h5>
-                                                  <h5 className="form-control">{dataItem.charger_model}</h5>
-                                                </div>
-                                                <div className="form-group col-md-6">
-                                                  <h5 className="modal-title" for="inputPassword4"><strong>Charger Type</strong></h5>
-                                                  <h5 className="form-control">{dataItem.charger_type}</h5>
-                                                </div>
-                                                <div className="form-group col-md-6">
-                                                  <h5 className="modal-title" for="inputPassword4"><strong>Current Phase</strong></h5>
-                                                  <h5 className="form-control">{dataItem.current_phase}</h5>
-                                                </div>
-                                                <div className="form-group col-md-6">
-                                                  <h5 className="modal-title" for="inputPassword4"><strong>Gun Connector</strong></h5>
-                                                  <h5 className="form-control">{dataItem.gun_connector}</h5>
-                                                </div>
-                                                <div className="form-group col-md-6">
-                                                  <h5 className="modal-title" for="inputPassword4"><strong>Max Current</strong></h5>
-                                                  <h5 className="form-control">{dataItem.max_current}</h5>
-                                                </div>
-                                                <div className="form-group col-md-6">
-                                                  <h5 className="modal-title" for="inputPassword4"><strong>Max Power</strong></h5>
-                                                  <h5 className="form-control">{dataItem.max_power}</h5>
-                                                </div>
-                                                <div className="form-group col-md-6">
-                                                  <h5 className="modal-title" for="inputPassword4"><strong>Socket Count</strong></h5>
-                                                  <h5 className="form-control">{dataItem.socket_count}</h5>
-                                                </div>
-                                              </div> */}                                          
                                           </div>
-                                          <div class="modal-footer">
-                                            <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+                                          <div className="modal-footer">
+                                            <button type="button" className="btn btn-danger" data-dismiss="modal">Close</button>
                                           </div>
                                         </div>
                                       </div>
@@ -781,7 +874,7 @@ const Home = ({ userInfo, handleLogout }) => {
                             ))
                           ) : (
                             <tr>
-                              <td colSpan="4" style={{ marginTop: '50px', textAlign: 'center' }}>No devices found.</td>
+                              <td colSpan="4" className="text-center" style={{ marginTop: '50px'}}>No devices found.</td>
                             </tr>
                           )
                         )}
@@ -800,13 +893,13 @@ const Home = ({ userInfo, handleLogout }) => {
           <blockquote className="blockquote">
             <div className="card">
               <div className="card-body">
-                <div style={{textAlign: 'center'}}>
-                  <h2 className="card-title text-primary">CHARGER STATUS</h2>
+                <div className="text-center">
+                  <h2 className="card-title text-colors">CHARGER STATUS</h2>
                   <h5>{ChargerStatus}</h5>
                   <h5>{timestamp}</h5>
-                  <h5 className="text-primary">{ChargerID}</h5>
+                  <h5 className="text-colors">{ChargerID}</h5>
                 </div>
-                <div className="container" style={{ paddingTop:'20px' ,paddingBottom: '20px', textAlign: 'center'}}>
+                <div className="container cardContainer">
                   <div className="row">
                     <div className="col-12 col-sm-4">
                       <div className="container mt-3">
@@ -853,21 +946,21 @@ const Home = ({ userInfo, handleLogout }) => {
                   </div>
                 </div>
                 <div className="container">
-                  <div className="row justify-content-around" style={{textAlign:'center'}}>
+                  <div className="row justify-content-around text-center">
                     <div className="col-12 col-sm-5">
                       <div className="container mt-4">
-                        <button type="submit" className="btn btn-success " onClick={handleStartTransaction} disabled={ChargerStatus !== 'Preparing'} id="startTransactionBtn" style={{width:'40%', borderRadius: '20px'}}><b>Start</b></button>    
+                        <button type="submit" className="button-br btn btn-outline-success" onClick={handleStartTransaction} disabled={ChargerStatus !== 'Preparing'} id="startTransactionBtn" style={{width:'40%', borderRadius: '20px'}}><b>Start</b></button>    
                       </div>
                     </div>
                     <div className="col-12 col-sm-5">
                       <div className="container mt-4">
-                        <button type="submit" className="btn btn-danger" onClick={handleStopTransaction} disabled={ChargerStatus !== 'Charging'} id="stopTransactionBtn" style={{width:'40%', borderRadius: '20px'}}><b>Stop</b></button>                        
+                        <button type="submit" className="button-br btn btn-outline-danger" onClick={handleStopTransaction} disabled={ChargerStatus !== 'Charging'} id="stopTransactionBtn" style={{width:'40%', borderRadius: '20px'}}><b>Stop</b></button>                        
                       </div>
                     </div>
                   </div>
                 </div>
-                <div style={{textAlign: 'center', paddingTop:"20px"}}>
-                  <button type="submit" className=" button-90" onClick={toggleTableVisibility}>
+                <div className="text-center paddingTop">
+                  <button type="submit" className="button-br btn btn-outline-primary" onClick={toggleTableVisibility}>
                     <span>{isTableVisible ? 'Hide Error History' : 'Show Error History'}</span>
                   </button>
                 </div>
@@ -876,8 +969,8 @@ const Home = ({ userInfo, handleLogout }) => {
                     <div className="card">
                       <div className="card-body">
                         <div className="table-container">
-                          <table className="table table-striped" style={{textAlign:'center'}}>
-                            <thead>
+                          <table className="table table-striped text-center" >
+                            <thead className="sticky-md-top">
                               <tr>
                                 <th>Sl.No</th>
                                 <th>Timestamp</th>
@@ -908,14 +1001,14 @@ const Home = ({ userInfo, handleLogout }) => {
                   </div>
                 )}
 
-                <div className="col-md-12 grid-margin stretch-card" style={{paddingTop:'20px'}}>
+                <div className="col-md-12 grid-margin stretch-card paddingTop" >
                   <div className="">
                     <div className="card-body">
                       <div className="row">
                         <div className="col-12 card" style={{backgroundColor:'rgb(232 239 96 / 67%)', borderRadius:'30px'}}>
                           <div className="table-responsive">
                             <div className="danger" style={{paddingLeft: '10px', paddingBottom:'5px', color: 'black'}}>
-                              <h4 style={{paddingTop:'20px'}}><u>THRESHOLD LEVEL:</u></h4>
+                              <h4 className="paddingTop"><u>THRESHOLD LEVEL:</u></h4>
                               <p><strong>Voltage level : </strong> Input under voltage - 175V and below. &nbsp;&nbsp;&nbsp;Input over voltage - 270V and above.</p>
                               <p><strong>Current :</strong> Over Current - 33A.</p>
                               <p><strong>Frequency :</strong> Under frequency - 47HZ. &nbsp;&nbsp;&nbsp;Over frequency - 53HZ.</p>
@@ -960,21 +1053,42 @@ const Home = ({ userInfo, handleLogout }) => {
         {/* Alert charger update Session Price To User start*/}
         {showAlert && (
           <div className="alert-overlay">
-            <div className="alert success alerts" style={{width:'500px'}}>
+            <div className="alert success alerts showAlert" style={{borderRadius:'25px'}}>
               <span className="alertClose" onClick={handleCloseAlert}>X</span>
               <div className="mb-4 text-center">
                 <svg xmlns="http://www.w3.org/2000/svg" className="text-success" width="55" height="55"  fill="currentColor"  viewBox="0 0 16 16">
                   <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z" />
                 </svg>
               </div>
-              <div style={{textAlign:'center'}}>
-                <h2 style={{color:'#155724'}}>Charging Done !</h2>
-                <span className="alertText"><p><strong>ChargerID:</strong> {chargingSession.ChargerID}</p></span>
-                <span className="alertText"><p><strong>Start Time:</strong> {chargingSession.StartTimestamp && new Date(chargingSession.StartTimestamp).toLocaleString('en-US', {timeZone: 'Asia/Kolkata'})}</p></span>
-                <span className="alertText"><p><strong>Stop Time:</strong> {chargingSession.StopTimestamp && new Date(chargingSession.StopTimestamp).toLocaleString('en-US', {timeZone: 'Asia/Kolkata'})}</p></span>
-                <span className="alertText"><p><strong>Unit Consumed:</strong> {chargingSession.Unitconsumed}</p></span>
-                <span className="alertText"><p><strong>Charging Price:</strong> {chargingSession.price}</p></span>
-                <span className="alertText"><p><strong>Available Balance:</strong> {updatedUser.walletBalance}</p></span>
+              <div className="text-center">
+                <h2 className="text-color">Charging Done !</h2>
+                <div className="row text-padding"> 
+                  <div className="col-sm-6">
+                    <span className="alertText"><strong>ChargerID</strong></span>
+                    <p>{chargingSession.ChargerID}</p>
+                  </div>
+                  <div className="col-sm-6">
+                    <span className="alertText"><strong>Start Time</strong></span>
+                    <p>{chargingSession.StartTimestamp && new Date(chargingSession.StartTimestamp).toLocaleString('en-US', {timeZone: 'Asia/Kolkata'})}</p>
+                  </div>
+                  <div className="col-sm-6">
+                    <span className="alertText"><strong>Stop Time</strong></span>
+                    <p>{chargingSession.StopTimestamp && new Date(chargingSession.StopTimestamp).toLocaleString('en-US', {timeZone: 'Asia/Kolkata'})}</p>
+                  </div>
+                  <div className="col-sm-6">
+                    <span className="alertText"><strong>Unit Consumed</strong></span>
+                    <p>{chargingSession.Unitconsumed}</p>
+                  </div>
+                  <div className="col-sm-6">
+                    <span className="alertText"><strong>Charging Price</strong></span>
+                    <p className="text-color"><strong>{chargingSession.price}</strong></p>
+                  </div>
+                  <div className="col-sm-6">
+                    <span className="alertText"><strong>Available Balance</strong></span>
+                    <p>{updatedUser.walletBalance}</p>
+                  </div>
+                </div>
+              
               </div>
             </div>
           </div>
@@ -983,7 +1097,7 @@ const Home = ({ userInfo, handleLogout }) => {
 
         {/* Alert error message start */}
         {errorData && (
-          <div className="alert alert-warning alert-dismissible fade show alert-container" role="alert" style={{width:'415px', textAlign:'center'}}>
+          <div className="alert alert-warning alert-dismissible fade show alert-container text-center" role="alert" style={{width:'415px'}}>
             <strong>{errorData}</strong> 
             <button type="button" className="close" data-dismiss="alert" aria-label="Close" onClick={closeAlert} style={{top:'7px'}}>
               <span aria-hidden="true">&times;</span>

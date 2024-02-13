@@ -422,3 +422,35 @@
  .paddingTop{
     padding-top: 20px;
  }
+ @media (max-width: 768px) { /* Adjust the breakpoint according to your design */
+  .hideMobile {
+    display: none !important;
+  }
+}
+
+.textGreen{
+  color: #089f00;
+}
+.textRed{
+  color: #ff1d1d;
+}
+
+.table-containerTwo{
+  max-height: 400px;
+  /* Adjust the height as needed */
+  overflow-y: auto;
+}
+.bgColor{
+  background-color: white;
+}
+.padding-Top{
+  padding-top: 0px;
+  margin-top: 0px;
+}
+.pBottom{
+  padding-bottom: 20px;
+}
+.fontPading{
+font-size: 26px;
+padding: 0px 10px 0px 10px;
+}

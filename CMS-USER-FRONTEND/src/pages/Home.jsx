@@ -517,24 +517,365 @@ const Home = ({ userInfo, handleLogout }) => {
     setSelectedItem(dataItem);
   };
 
+  
+  // Get user details
+  const handleUderDetails = (Username) => {
+    fetchUserDetails(Username);
+
+  }
+
+  const [userName, setUserUname] = useState(null);
+  const [userPhone, setUserPhone] = useState(null);
+  const [userPass, setUserPass] = useState(null);
+  const [otpFields, setOtpFields] = useState(['', '', '', '']);
+  const [profileMessage, setProfileMessage] = useState(null);
+
+  const fetchUserDetails = async (Username) => {
+    try {
+      const response = await fetch(`/getUserDetails?username=${Username}`);
+      const data = await response.json();
+      setUserUname(data.value.username);
+      setUserPhone(data.value.phone);
+      setUserPass(data.value.password);
+    } catch (error) {
+      console.error('Error fetching wallet balance:', error);
+    }
+  };
+
+    useEffect(() => {
+  }, [Username]);
+  
+  // Function to handle changes in OTP fields
+  const handleOtpChange = (index, value) => {
+    // Ensure input is a digit
+    if (/^\d$/.test(value)) {
+      const newOtpFields = [...otpFields];
+      newOtpFields[index] = value;
+      setOtpFields(newOtpFields);
+      setUserPass(newOtpFields.join(''));
+    } else if (value === '') { // If value is empty, remove digit
+      const newOtpFields = [...otpFields];
+      newOtpFields[index] = '';
+      setOtpFields(newOtpFields);
+      setUserPass(newOtpFields.join(''));
+    }
+  };
+
+  useEffect(() => {
+    // Ensure userPass has exactly 4 digits
+    if (userPass !== null && userPass.length === 4 && /^\d+$/.test(userPass)) {
+      setOtpFields(userPass.split(''));
+    }
+  }, [userPass]);
+
+
+  // user details update
+   const handleUpdate = async (e) => {
+    e.preventDefault();
+
+    const updatedData = {
+      updateUsername: e.target.elements.updateUsername.value.trim(),
+      updatePhone: e.target.elements.updatePhone.value.trim(),
+      updatePass: otpFields.join(''),
+    };
+
+    // Validation for username
+    const formattedUsername = updatedData.updateUsername.replace(/\s+/g, '_');
+    if (formattedUsername !== updatedData.updateUsername) {
+      setProfileMessage('User Name should not contain spaces, e.g., kesav_d');
+      return;
+    }
+
+    // Validation for password (4-digit number)
+    const passwordPattern = /^\d{4}$/;
+    if (!passwordPattern.test(updatedData.updatePass)) {
+      setProfileMessage('Password must be a 4-digit number');
+      return;
+    }
+
+    // Validation for phone number (10 digits)
+    const phonePattern = /^\d{10}$/;
+    if (!phonePattern.test(updatedData.updatePhone)) {
+      setProfileMessage('Phone number must be a 10-digit number');
+      return;
+    }
+
+    try {
+      const response = await fetch(`updateUserDetails`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedData),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setShowAlertsUDSuccess(data.message);
+         // Programmatically trigger a click event on the Close button
+    document.querySelector('.btnClose').click();
+      } else {
+        console.error('Error updating user successfully');
+      }
+    } catch (error) {
+      console.error('Error updating user Unsuccessfully:', error);
+    }
+  };
+
+  const [successUDupdate, setShowAlertsUDSuccess] = useState(false);
+  const closeAlertUDSuccess = () => {
+    setShowAlertsUDSuccess(false);
+  };
+
+  // Get user charging session details
+  const handleChargingSessionDetails = (Username) => {
+    fetchChargingSessionDetails(Username);
+  }
+  const [sessionDetails, setSessionDetails] = useState('');
+
+  const fetchChargingSessionDetails = async (Username) => {
+    try {
+      const response = await fetch(`/getChargingSessionDetails?username=${Username}`);
+      const data = await response.json();
+      setSessionDetails(data.value);
+    } catch (error) {
+      console.error('Error fetching charging session details:', error);
+    }
+  };
+
+    useEffect(() => {
+  }, [Username]);
+
+  // Get user transaction details
+  const handleTransactionDetails = (Username) => {
+    fetchTransactionDetails(Username);
+  }
+  const [transactionDetails, setTransactionDetails] = useState('');
+
+  const fetchTransactionDetails = async (Username) => {
+    try {
+      const response = await fetch(`/getTransactionDetails?username=${Username}`);
+      const data = await response.json();
+      setTransactionDetails(data.value);
+    } catch (error) {
+      console.error('Error fetching transaction details:', error);
+    }
+  };
+
+    useEffect(() => {
+  }, [Username]);
   return (
     <div>
       {/* Navbar */}
       <nav className="navbar navbar-expand-lg navbar-light bg-light">
         <span className="navbar-brand"><img src="img/EV_Power_16-12-2023.png" alt="logo" width="120"/></span>
         <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-          <span className="navbar-toggler-icon"></span>
+          <span className="navbar-toggler-icon" data-bs-toggle="offcanvas" data-bs-target="#offcanvasRight" aria-controls="offcanvasRight"></span>
         </button>
         <div className="collapse navbar-collapse" id="navbarNav">
           <ul className="navbar-nav ml-auto">
             <li className="nav-item">
-              <form className="form-inline"  onClick={() => handleLogouts(ChargerID)}>
-                <button type="button" className="button-br btn btn-outline-danger">Logout</button>
-              </form>
+              <i className="fa fa-ellipsis-v hideMobile fontPading" aria-hidden="true" data-bs-toggle="offcanvas" data-bs-target="#offcanvasRight" aria-controls="offcanvasRight"></i>
             </li>
           </ul>
         </div>
       </nav>
+      <div className="offcanvas offcanvas-end" tabIndex="-1" id="offcanvasRight" aria-labelledby="offcanvasRightLabel" style={{width:'300px'}}>
+        <div className="offcanvas-header">
+          <h4 id="offcanvasRightLabel"className="text-colors">Menu</h4>
+          <button type="button" className="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div className="offcanvas-body">
+          <div className="list-group list-group-flush"> 
+            <h4 className="list-group-item-action list-group-item text-reset" data-bs-dismiss="offcanvas" aria-label="Close" data-toggle="modal" data-target="#modalProfile" onClick={() => handleUderDetails(Username)}>Profile</h4>
+            <h4 className="list-group-item-action list-group-item text-reset" data-bs-dismiss="offcanvas" aria-label="Close" data-toggle="modal" data-target="#modalSession" onClick={() => handleChargingSessionDetails(Username)}>Session Details</h4>
+            <h4 className="list-group-item-action list-group-item text-reset" data-bs-dismiss="offcanvas" aria-label="Close" data-toggle="modal" data-target="#modalWallet" onClick={() => handleTransactionDetails(Username)}>Wallet Transactions</h4>
+            <h4 className="list-group-item-action list-group-item text-reset" data-bs-dismiss="offcanvas" aria-label="Close" data-toggle="modal" data-target="#modalHelp" >Help</h4>
+            <h4 className="list-group-item-action list-group-item text-reset"  onClick={() => handleLogouts(ChargerID)}>Logout</h4>
+          </div>
+        </div>
+      </div>
+      {/* Profile */}
+      <div className="container">
+        <div className="modal" id="modalProfile">
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <h3 className="text-colors text-center paddingTop">PROFILE</h3>
+              <div className="modal-header textCenter"></div>
+              <div className="modal-body marginLeft20">
+                <form onSubmit={handleUpdate}>
+                  <div className="mb-3">
+										<label className="mb-2 text-muted" htmlFor="name">User Name</label>
+										<input type="text" className="form-control" name="updateUsername" defaultValue={userName} readOnly required/>
+										<div className="invalid-feedback">User Name is required</div>
+									</div>
+
+									<div className="mb-3">
+										<label className="mb-2 text-muted" htmlFor="Phone">Phone</label>
+										<input type="text" className="form-control" name="updatePhone" defaultValue={userPhone} required/>
+										<div className="invalid-feedback">Phone is required	</div>
+									</div>
+
+                  <div className="mb-3">
+										<label className="mb-2 text-muted" htmlFor="password">Password</label>
+                    <div className="otp-field mb-4">
+                        {otpFields.map((digit, index) => (
+                          <input key={index} type="number" className="form-control" value={digit} onChange={(e) => handleOtpChange(index, e.target.value)} maxLength="1" />
+                        ))}
+                    </div>
+										<div className="invalid-feedback">Password is required</div>
+									</div>
+                  <div className="mb-3">
+                    <button type="submit" className="btn btn-primary ms-auto">Update</button>
+                  </div>
+                </form>
+              </div>
+              {/* Profile alert message */}
+              {profileMessage && ( <h5 className="text-danger mt-3 text-center" aria-live="assertive" aria-atomic="true"  >{profileMessage}</h5>)}
+              {/* Profile alert message */}
+              <div className="modal-footer">
+                <button type="button" className="btn btn-danger btnClose"  data-dismiss="modal">Close</button>              
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {/*Alert user details update success message start */}
+      {successUDupdate && (
+          <div className="alert-overlay">
+            <div className="alert success alerts" style={{width:'500px', textAlign:'center'}}>
+              <span className="alertClose" onClick={closeAlertUDSuccess}>X</span>
+              <span className="alertText" style={{fontSize:'20px'}}><strong style={{color:'#155724'}}>{successUDupdate}</strong></span>
+            </div>
+          </div>
+        )}
+      {/* Alert user details update success message end */}
+      {/* Modal session details*/}
+      <div className="container">
+        <div className="modal fade bd-example-modal-xl" tabIndex="-1" role="dialog" aria-labelledby="myExtraLargeModalLabel" aria-hidden="true" id="modalSession">
+          <div className="modal-dialog  modal-dialog-centered  modal-xl">
+            <div className="modal-content"> 
+              <h3 className="text-colors text-center paddingTop pBottom">SESSION DETAILS</h3>
+              {/* <div className="modal-header textCenter"></div> */}
+              <div className="modal-body marginLeft20 table-containerTwo padding-Top">
+                <table className="table text-center">
+                  <thead className="sticky-md-top bgColor">
+                    <tr>
+                      <th>Sl.No</th>
+                      <th>DeviceID</th>
+                      <th>SessionID</th>
+                      <th>Start Time</th>
+                      <th>Stop Time</th>
+                      <th>Unit Consumed</th>
+                      <th>Price</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Array.isArray(sessionDetails) && sessionDetails.length > 0 ? (
+                      sessionDetails.map((sessionItem, index) => (
+                        <tr key={index}>
+                          <td>{index + 1}</td>
+                          <td>{sessionItem.ChargerID ? sessionItem.ChargerID : "-"}</td>
+                          <td>{sessionItem.ChargingSessionID ? sessionItem.ChargingSessionID : "-"}</td>
+                          <td>{sessionItem.StartTimestamp ? new Date(sessionItem.StartTimestamp).toLocaleString('en-US', {timeZone: 'Asia/Kolkata'})  : "-"}</td>
+                          <td>{sessionItem.StopTimestamp ? new Date(sessionItem.StopTimestamp).toLocaleString('en-US', {timeZone: 'Asia/Kolkata'}) : "-"}</td>
+                          <td>{sessionItem.Unitconsumed ? sessionItem.Unitconsumed : "-"}</td>
+                          <td>Rs. {sessionItem.price ? sessionItem.price : "-"}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="7" className="text-center">No Transaction.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-danger" data-dismiss="modal">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* Wallet Transaction */}
+      <div className="container">
+        <div className="modal" id="modalWallet">
+          <div className="modal-dialog modal-lg modal-dialog-centered">
+            <div className="modal-content">
+              <h3 className="text-colors text-center paddingTop pBottom">WALLET TRANSACTIONS</h3>
+              {/* <div className="modal-header textCenter"></div> */}
+              <div className="modal-body marginLeft20 table-containerTwo padding-Top">
+                <table className="table text-center">
+                  <thead className="sticky-md-top bgColor">
+                    <tr>
+                      <th>Sl.No</th>
+                      <th>Status</th>
+                      <th>Amount</th>
+                      <th>Time</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Array.isArray(transactionDetails) && transactionDetails.length > 0 ? (
+                      transactionDetails.map((transactionItem, index) => (
+                        <tr key={index}>
+                          <td>{index + 1}</td>
+                          <td>{transactionItem.status ? transactionItem.status : "-"}</td>
+                          <td style={{color: transactionItem.status === 'Credited' ? 'green' : transactionItem.status === 'Deducted' ? 'red' : 'black'}}>
+                            <strong> {transactionItem.amount ? (transactionItem.status === 'Credited' ? "+ Rs. " + transactionItem.amount : 
+                              transactionItem.status === 'Deducted' ? "-  Rs. " + transactionItem.amount : "-") : "-"}</strong>
+                          </td>
+                          <td>{transactionItem.time ? new Date(transactionItem.time).toLocaleString('en-US', {timeZone: 'Asia/Kolkata'}) : "-"}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="4" className="text-center">No Transaction.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-danger" data-dismiss="modal">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* Help */}
+      <div className="container">
+        <div className="modal" id="modalHelp">
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <h3 className="text-colors text-center paddingTop">HELP</h3>
+              <div className="modal-header textCenter"></div>
+              <div className="modal-body marginLeft20">
+                <div className="row">
+                  <div className="col-sm-12">
+                    <h3>Need help? Contact us!</h3>
+                  </div>
+                  <div className="col-sm-12">
+                    <p>If you require assistance or have any questions, feel free to reach out to us via <span className="textGreen">email</span> or <span className="textGreen">WhatsApp</span>.</p>
+                  </div>
+                  <div className="col-sm-12">
+                    <h6>Emai-ID : <span><a href="mailto:evpower@gmail.com"  className="mail">evpower[at]gmail.com</a></span></h6>
+                  </div>
+                  <div className="col-sm-12">
+                    <h6><span>WhatsApp Number : 95959XXXXX</span></h6>
+                  </div>
+                  <div className="col-sm-12">
+                    <p>We're here to help you!</p>
+                  </div>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-danger" data-dismiss="modal">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       {/* Container for Page welcome session start */}
       <div className="container mt-4">
         <div className="col-md-12">
@@ -758,9 +1099,9 @@ const Home = ({ userInfo, handleLogout }) => {
                     <div className="col-sm-12">No devices found.</div>
                     )
                   )} */}
-                   <div className="table-container">
-                    <table className="table table-hover text-center">
-                      <thead className="sticky-md-top">
+                  <div className="table-container">
+                   <table className="table table-hover">
+                      <thead>
                         <tr>
                           <th>Sl.No</th>
                           <th>DeviceID</th>

@@ -1,11 +1,18 @@
 const database = require('./db');
 
 const authenticate = async(req, res, next) => {
-    const email = req.body.loginUsername;
-    const password = req.body.loginPassword;
     try {
+        const email = req.body.loginUsername;
+        const password = req.body.loginPassword;
+
         const db = await database.connectToDatabase();
         const usersCollection = db.collection('users');
+
+        // Check if both email and password are empty
+        if (!email || !password) {
+            const errorMessage = 'Invalid credentials';
+            return res.status(401).json({ message: errorMessage });
+        }
 
         const user = await usersCollection.findOne({ username: email });
 
@@ -25,8 +32,13 @@ const authenticate = async(req, res, next) => {
 };
 
 const registerUser = async(req, res, next) => {
-    const { registerUsername, registerPassword, registerPhone } = req.body;
     try {
+        const { registerUsername, registerPassword, registerPhone } = req.body;
+
+        if (!registerUsername || !registerPassword || !registerPhone) {
+            const errorMessage = 'Register - Values undefined';
+            return res.status(401).json({ message: errorMessage });
+        }
         const db = await database.connectToDatabase();
         const usersCollection = db.collection('users');
 

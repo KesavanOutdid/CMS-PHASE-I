@@ -7,7 +7,7 @@ const logger = require('./logger');
 const { wsConnections } = require('./MapModules');
 var sha256 = require('sha256'); //create hash for data like password
 var uniqid = require('uniqid'); //generate unique ID
-var axios = require('axios'); //like ajax
+var axios = require('axios'); //ajax
 const cors = require('cors');
 
 const router = express.Router();
@@ -54,9 +54,8 @@ router.post('/RegisterNewUser', auth.registerUser, (req, res) => {
 });
 
 router.get('/GetWalletBalance', async(req, res) => {
-    const username = req.query.username;
-
     try {
+        const username = req.query.username;
         const db = await database.connectToDatabase();
         const usersCollection = db.collection('users');
         const user = await usersCollection.findOne({ username: username });
@@ -263,8 +262,8 @@ router.post('/stop', async(req, res) => {
 
 router.post('/getUpdatedCharingDetails', async(req, res) => {
     try {
-        const parsedUrl = url.parse(req.url, true);
-        const queryParams = parsedUrl.query;
+        // const parsedUrl = url.parse(req.url, true);
+        // const queryParams = parsedUrl.query;
         const chargerID = req.body.chargerID;
         const user = req.body.user;
         const db = await database.connectToDatabase();
@@ -394,7 +393,7 @@ async function savePaymentDetails(data, user) {
             RechargeAmt: parseFloat(amount),
             transactionId: transactionId,
             responseCode: responseCode,
-            date_time: new Date().toLocaleString()
+            date_time: new Date().toISOString()
         });
 
         if (!paymentResult) {
@@ -461,6 +460,133 @@ async function getIpAndupdateUser(chargerID, user) {
     }
 
 }
+
+router.get('/getUserDetails', async function(req, res) {
+    try {
+        const user = req.query.username;
+        if (!user) {
+            const errorMessage = 'UserDetails - Username undefined !';
+            return res.status(401).json({ message: errorMessage });
+        }
+        const db = await database.connectToDatabase();
+        const usersCollection = db.collection('users');
+        const result = await usersCollection.findOne({ username: user });
+
+        if (!result) {
+            const errorMessage = 'getUserDetail - Username not found !';
+            console.log(errorMessage);
+            return res.status(404).json({ message: errorMessage });
+        }
+
+        res.status(200).json({ value: result });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: 'Internal Server Error' });
+    }
+});
+
+router.get('/getChargingSessionDetails', async function(req, res) {
+    try {
+        const user = req.query.username;
+        if (!user) {
+            const errorMessage = 'ChargerSessionDetails - Username undefined !';
+            return res.status(401).json({ message: errorMessage });
+        }
+        const db = await database.connectToDatabase();
+        const Collection = db.collection('charging_session');
+        const result = await Collection.find({ user: user, StopTimestamp: { $ne: null } }).sort({ StopTimestamp: -1 }).toArray();
+
+        if (!result || result.length === 0) {
+            const errorMessage = 'ChargerSessionDetails - No record found !';
+            return res.status(404).json({ message: errorMessage });
+        }
+
+        return res.status(200).json({ value: result });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: 'Internal Server Error' });
+    }
+});
+
+router.get('/getTransactionDetails', async function(req, res) {
+    try {
+        const user = req.query.username;
+        if (!user) {
+            const errorMessage = 'TransactionDetails - Username undefined !';
+            return res.status(401).json({ message: errorMessage });
+        }
+        const db = await database.connectToDatabase();
+        const CharSessionCollection = db.collection('charging_session');
+        const walletTransCollection = db.collection('paymentDetails');
+
+        // Query charging_session collection and sort by StopTimestamp
+        const chargingSessionResult = await CharSessionCollection.find({ user: user }).toArray();
+
+        // Query paymentDetails collection and sort by date_time
+        const paymentDetailsResult = await walletTransCollection.find({ user: user }).toArray();
+
+        if (chargingSessionResult.length || paymentDetailsResult.length) {
+
+            // Add 'type' field to indicate credit
+            const deducted = chargingSessionResult
+                .filter(session => session.StopTimestamp !== null)
+                .map(session => ({ status: 'Deducted', amount: session.price, time: session.StopTimestamp }));
+
+            // Add 'type' field to indicate deducted
+            const credits = paymentDetailsResult.map(payment => ({ status: 'Credited', amount: payment.RechargeAmt, time: payment.date_time }));
+
+            // Combine both sets of documents into one array
+            let mergedResult = [...credits, ...deducted];
+
+            // Sort the merged array by timestamp
+            mergedResult.sort((a, b) => {
+                const timestampA = new Date(a.time);
+                const timestampB = new Date(b.time);
+                return timestampB - timestampA; // Sort in descending order by timestamp
+            });
+
+            const finalResult = mergedResult.map(item => ({ status: item.status, amount: item.amount, time: item.time }));
+
+            return res.status(200).json({ value: finalResult });
+        } else {
+            return res.status(200).json({ message: 'No Record Found !' });
+        }
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: 'Internal Server Error' });
+    }
+});
+
+router.post('/updateUserDetails', async function(req, res) {
+    try {
+        const user = req.body.updateUsername;
+        const phone = req.body.updatePhone;
+        const pin = req.body.updatePass;
+
+        if (!user || !phone || !pin) {
+            const errorMessage = 'Update User - Values undefined';
+            return res.status(401).json({ message: errorMessage });
+        }
+
+        const db = await database.connectToDatabase();
+        const usersCollection = db.collection('users');
+
+        // Update the user details
+        const result = await usersCollection.updateOne({ username: user }, { $set: { phone: phone, password: pin } });
+
+        if (result.modifiedCount === 1) {
+            console.log(`User ${user} details updated successfully`);
+            res.status(200).json({ message: `User ${user} details updated successfully` });
+        } else {
+            console.log(`User ${user} not found`);
+            res.status(404).json({ message: `User ${user} not found` });
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: 'Internal Server Error' });
+    }
+});
 
 // Export the router
 module.exports = router;

@@ -1,0 +1,75 @@
+#Overview of the project: EV Charger Application v1.0 beta (14-2-24)
+
+#User application - backend
+
+1. User Authentication and Registration: Implement a authentication system allowing users to register with a unique username, phone number, and PIN. Authenticate users upon login to ensure the security of the system.
+
+2. Wallet Management: Create a mechanism to manage user wallets, including storing the wallet balance associated with each user. Ensure transactions are accurately reflect the user's balance.
+
+3. Dashboard Display: Develop a dashboard interface where users can easily view their wallet balance and recharge options. Displaying the available balance prominently allows users to make informed decisions about recharging their wallets.
+
+4. Recharge Functionality: Implement the ability for users to recharge their wallet using the PhonePe payment gateway. Provide options for users to select from predefined recharge amounts or enter a custom recharge amount. Enforce a minimum recharge amount of 500 INR to maintain a healthy balance in the system.
+
+5. Integration with PhonePe Payment Gateway: Integrate the PhonePe payment gateway to facilitate secure transactions. Ensure that users' financial information is protected and that recharge processes are seamless and efficient.
+
+6. Charger Search Functionality:
+    * Receive input from the user specifying the charger ID.
+    * Query the database to check the status of the charger associated with the provided ID.
+
+7. Check Charger Availability:
+    * If the charger is available, proceed to the charger dashboard.
+    * If the charger is busy or already in use, display an alert message.
+
+8. Display Charger Dashboard or Alert:
+    If the charger is available:
+        * Redirect the user to the charger dashboard, where they can view details and initiate the charging process.
+    If the charger is busy:
+        * Display an alert message informing the user that the charger is currently in use.
+
+9. WebSocket Connection Establishment:
+    * Configure the charger to establish a WebSocket connection with the application server using the basics of OCPP protocol.
+    * Ensure that the server is listening for WebSocket connections and can handle incoming messages from the chargers.
+
+10. Charger Status Updates and Database Storage:
+    * Define the message format for exchanging charger status updates between the charger and the application server.
+    * Upon receiving status updates from the charger, parse the data and save relevant details (such as status, values, time, etc.) into the database.
+    * Store the charger ID in the database upon registration or connection establishment to associate charger data with the correct charger.
+
+11. Data Transmission to Client (Browser) via WebSocket:
+    * Configure the server to broadcast charger status updates to connected clients (browsers) via WebSocket.
+    * Clients subscribing to charger status updates should receive real-time data about charger status, values, etc., facilitating a dynamic user interface.
+
+12. Charger Start and Stop Functions:
+    * Implement functionality on the client-side (browser) to allow users to start and stop the charger.
+    * Upon user interaction (e.g., clicking "Start" or "Stop" buttons), send corresponding commands to the application server via WebSocket.
+    * The server processes these commands and sends the appropriate instructions to the charger over the WebSocket connection.
+
+13. Charging Session Management and Price Calculation:
+    * Monitor the charger's status during charging sessions and calculate the price based on unit consumption.
+    * Track the start and end times of charging sessions to determine the duration and calculate the total price accordingly.
+    * Automatically deduct the calculated price from the user's wallet upon completion of the charging session.
+    * Implement error handling mechanisms to handle any issues that may occur during charging sessions (e.g., charger faults) and gracefully stop charging while calculating the price for the partial session.
+
+14. Profile:
+    * Allow users to view their profile details such as username, email, and contact information.
+    * Implement the ability for users to update certain fields of their profile, such as contact information.
+    * On the frontend, provide a form where users can input new data or modify existing information.
+    * Handle profile updates on the backend by validating and saving the changes to the database.
+
+15. Session Details:
+    * Display a list of charging sessions with details including start and stop time, total price, units consumed, and any additional relevant information.
+    * Implement pagination or infinite scrolling to handle large numbers of charging sessions.
+    * Retrieve session data from the backend database and display it in a user-friendly format on the frontend.
+
+16. Wallet Transactions:
+    * Present a chronological list of wallet transactions, including both credits and debits.
+    * Display details such as transaction date, type (credit or debit), amount, and description 
+    (e.g., "Recharge", "Charging Session Payment").
+    * Fetch wallet transaction data from the backend database and render it in the frontend application for users to view.
+
+17. Help:
+    * Provide contact information for user support, such as an email address and WhatsApp number.
+    * Display this information in a clear and accessible manner within the help section of the application.
+
+18. Logout:
+    * Upon logout, clear the user's session data and redirect them to the login page.

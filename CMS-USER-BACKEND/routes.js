@@ -1,24 +1,30 @@
 const express = require('express');
-const path = require('path');
 const auth = require('./auth');
 const database = require('./db');
 const url = require('url');
 const logger = require('./logger');
 const { wsConnections } = require('./MapModules');
-var sha256 = require('sha256'); //create hash for data like password
-var uniqid = require('uniqid'); //generate unique ID
-var axios = require('axios'); //ajax
+const { savePaymentDetails, getIpAndupdateUser } = require('./functions');
+var sha256 = require('sha256');
+var uniqid = require('uniqid');
+var axios = require('axios');
 const cors = require('cors');
 
+// Create a router instance
 const router = express.Router();
+
+// Enable CORS
 router.use(cors());
 
+// Parse URL-encoded bodies
 router.use(express.urlencoded({ extended: true }));
 
+// Route to check login credentials
 router.post('/CheckLoginCredentials', auth.authenticate, (req, res) => {
     res.status(200).json({ message: 'Success' });
 });
 
+// Route to logout and update users fields
 router.post('/LogoutCheck', async(req, res) => {
     const chargerID = req.body.ChargerID;
     try {
@@ -49,10 +55,12 @@ router.post('/LogoutCheck', async(req, res) => {
     }
 });
 
+// Route to add a new user (Save into database)
 router.post('/RegisterNewUser', auth.registerUser, (req, res) => {
     res.status(200).json({ message: 'Success' });
 });
 
+// Route to get user wallet balance
 router.get('/GetWalletBalance', async(req, res) => {
     try {
         const username = req.query.username;
@@ -74,6 +82,7 @@ router.get('/GetWalletBalance', async(req, res) => {
     }
 });
 
+// Route to Update username based on charger status
 router.get('/endChargingSession', async(req, res) => {
     const ChargerID = req.query.ChargerID;
     try {
@@ -81,7 +90,7 @@ router.get('/endChargingSession', async(req, res) => {
         const collection = db.collection('ev_details');
         const chargerStatus = await db.collection('ev_charger_status').findOne({ chargerID: ChargerID });
 
-        if (chargerStatus.status === 'Available' || chargerStatus.status === 'Faulted') {
+        if (chargerStatus.status === 'Available' || chargerStatus.status === 'Faulted' || chargerStatus.status === 'Finishing') {
 
             const result = await collection.updateOne({ ChargerID: ChargerID }, { $set: { current_or_active_user: null } });
 
@@ -103,6 +112,7 @@ router.get('/endChargingSession', async(req, res) => {
     }
 });
 
+//Route to Check charger ID from database
 router.post('/SearchCharger', async(req, res) => {
     const ChargerID = req.body.searchChargerID;
     const user = req.body.Username;
@@ -163,7 +173,7 @@ router.post('/SearchCharger', async(req, res) => {
     }
 });
 
-//fetch last charger status
+//Route to Fetch latest charger details
 router.post('/FetchLaststatus', async(req, res) => {
     const id = req.body.id
     try {
@@ -186,7 +196,7 @@ router.post('/FetchLaststatus', async(req, res) => {
 
 });
 
-//start the charger
+//Route to start the charger
 router.post('/start', async(req, res) => {
     // const parsedUrl = url.parse(req.url, true);
     // const queryParams = parsedUrl.query;
@@ -218,7 +228,7 @@ router.post('/start', async(req, res) => {
     }
 });
 
-//stop the charger
+//Route to stop the charger
 router.post('/stop', async(req, res) => {
     // const parsedUrl = url.parse(req.url, true);
     // const queryParams = parsedUrl.query;
@@ -260,6 +270,7 @@ router.post('/stop', async(req, res) => {
         });
 });
 
+//Route to Get charging session details at the time of stop
 router.post('/getUpdatedCharingDetails', async(req, res) => {
     try {
         // const parsedUrl = url.parse(req.url, true);
@@ -292,6 +303,7 @@ router.post('/getUpdatedCharingDetails', async(req, res) => {
     }
 });
 
+//Route to Call phonepe API to recharge
 router.get('/pay', async function(req, res, next) {
     try {
         const RCuser = req.query.RCuser;
@@ -338,6 +350,7 @@ router.get('/pay', async function(req, res, next) {
     }
 });
 
+// Route to Return phonepe API after recharge
 router.all('/pay-return-url', async function(req, res) {
     const parsedUrl = url.parse(req.url, true);
     const queryParams = parsedUrl.query;
@@ -376,44 +389,7 @@ router.all('/pay-return-url', async function(req, res) {
     }
 });
 
-async function savePaymentDetails(data, user) {
-    const responseCode = data.data.responseCode;
-    const amount = (data.data.amount / 100).toFixed(2);
-    const transactionId = data.data.transactionId;
-    const RCuser = user;
-
-    const db = await database.connectToDatabase();
-    const paymentCollection = db.collection('paymentDetails');
-    const userCollection = db.collection('users');
-
-    try {
-        // Insert payment details
-        const paymentResult = await paymentCollection.insertOne({
-            user: RCuser,
-            RechargeAmt: parseFloat(amount),
-            transactionId: transactionId,
-            responseCode: responseCode,
-            date_time: new Date().toISOString()
-        });
-
-        if (!paymentResult) {
-            throw new Error('Failed to save payment details');
-        }
-
-        // Update user's wallet
-        const updateResult = await userCollection.updateOne({ username: RCuser }, { $inc: { walletBalance: parseFloat(amount) } });
-
-        if (updateResult.modifiedCount === 1) {
-            return true;
-        } else {
-            throw new Error('Failed to update user wallet');
-        }
-    } catch (error) {
-        console.error(error.message);
-        return false;
-    }
-}
-
+// Route to Fetch all the charger details
 router.get('/GetAllChargerDetails', async function(req, res) {
     try {
         const db = await database.connectToDatabase();
@@ -432,35 +408,7 @@ router.get('/GetAllChargerDetails', async function(req, res) {
     }
 });
 
-async function getIpAndupdateUser(chargerID, user) {
-    try {
-        const db = await database.connectToDatabase();
-        const getip = await db.collection('ev_details').findOne({ ChargerID: chargerID });
-        const ip = getip.ip;
-        if (getip) {
-            if (user !== undefined) {
-                const updateResult = await db.collection('ev_details').updateOne({ ChargerID: chargerID }, { $set: { current_or_active_user: user } });
-
-                if (updateResult.modifiedCount === 1) {
-                    console.log(`Updated current_or_active_user to ${user} successfully for ChargerID ${chargerID}`);
-                } else {
-                    console.log(`Failed to update current_or_active_user for ChargerID ${chargerID}`);
-                }
-            } else {
-                console.log('User is undefined - On stop there will be no user details');
-            }
-
-            return ip;
-        } else {
-            console.log(`GetIP Unsuccessful`);
-        }
-    } catch (error) {
-        console.error(error);
-        res.status(500).send({ message: 'Internal Server Error' });
-    }
-
-}
-
+//Route to Fetch specific user details
 router.get('/getUserDetails', async function(req, res) {
     try {
         const user = req.query.username;
@@ -485,6 +433,7 @@ router.get('/getUserDetails', async function(req, res) {
     }
 });
 
+//Route to Fetch specific user charging session details
 router.get('/getChargingSessionDetails', async function(req, res) {
     try {
         const user = req.query.username;
@@ -508,6 +457,7 @@ router.get('/getChargingSessionDetails', async function(req, res) {
     }
 });
 
+//Route to Fetch specific user wallet deduction and wallet recharge history
 router.get('/getTransactionDetails', async function(req, res) {
     try {
         const user = req.query.username;
@@ -558,6 +508,7 @@ router.get('/getTransactionDetails', async function(req, res) {
     }
 });
 
+//Route to Update user details
 router.post('/updateUserDetails', async function(req, res) {
     try {
         const user = req.body.updateUsername;

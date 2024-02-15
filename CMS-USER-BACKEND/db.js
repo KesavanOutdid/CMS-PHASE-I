@@ -4,6 +4,7 @@ const url = 'mongodb+srv://outdid:outdid@cluster0.t16a63a.mongodb.net/';
 const dbName = 'ev_admin';
 let client;
 
+//database connection
 async function connectToDatabase() {
     if (!client) {
         client = new MongoClient(url);
@@ -19,6 +20,4 @@ async function connectToDatabase() {
     return client.db(dbName);
 }
 
-module.exports = {
-    connectToDatabase,
-};
+module.exports = { connectToDatabase };

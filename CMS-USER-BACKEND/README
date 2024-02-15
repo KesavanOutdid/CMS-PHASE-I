@@ -1,0 +1,74 @@
+## USER-APPLICATION-BACKEND
+
+# Node.js Backend
+
+This is a Node.js backend project designed to provide APIs for [EV Charger User Application].
+
+## Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/KesavanOutdid/CMS-PHASE-I.git
+
+2. path:
+    cd CMS-USER-BACKEND
+
+3. Install dependencies:
+    npm install express mongodb http path dotenv cors body-parser winston url sha256 uniqid axios websocket
+
+    * express: Web framework for Node.js
+    * mongodb: MongoDB driver for Node.js
+    * http: HTTP module for Node.js
+    * path: Utility for working with file and directory paths
+    * dotenv: Load environment variables from a .env file
+    * cors: Enable Cross-Origin Resource Sharing (CORS)
+    * body-parser: Parse incoming request bodies
+    * winston: Logging library for Node.js
+    * url: Utility for URL resolution and parsing
+    * sha256: SHA-256 cryptographic hash function
+    * uniqid: Generate unique identifiers
+    * axios: Promise-based HTTP client
+    * websocket: WebSocket library for Node.js
+
+4. After installing the dependencies, you can start the server using:
+    npm start
+
+## Configuration
+
+1. .env file:
+    * HTTP_PORT=8052 - Server running port
+    * WS_PORT=8050 - Websocket charger receiver port
+    * WS_PORT_CLIENT=7050 - Websocket sender to client port
+    * merchantId - Payment gateway merchantId (Phonepe)
+    * merchantUserId= User ID for payment gateway (Phonepe)
+    * saltKey= keys declare for payment gateway (Phonepe)
+    * saltIndex= keys declare for payment gateway (Phonepe)
+    * paymentURL - payment gateway API call URL (Phonepe)
+    * paymentURLStatus - payment gateway API call URL for status (Phonepe)
+
+2. Database setup:
+    database url = mongodb+srv://outdid:outdid@cluster0.t16a63a.mongodb.net/
+    database name = ev_admin
+
+3. External Service Integration:
+    payment gateway integration - Phonepe API
+    
+## Endpoints
+
+1. `POST /CheckLoginCredentials` - Check login credentials
+2. `POST /LogoutCheck` - Update users fields at the time of logout
+3. `POST /RegisterNewUser` - Register new user (Save into database)
+4. `GET /GetWalletBalance` - Fetch user wallet details
+5. `GET /endChargingSession` - Update username based on charger status
+6. `POST /SearchCharger` - Check charger ID from database
+7. `POST /FetchLaststatus` - Fetch latest charger details
+8. `POST /start` - Start the charger
+9. `POST /stop` - stop the charger
+10. `POST /getUpdatedCharingDetails` - Get charging session details at the time of stop
+11. `GET /pay` - Call phonepe API to recharge
+12. `ALL /pay-return-url` - Return phonepe API after recharge
+13. `GET /GetAllChargerDetails` - Fetch all the charger details
+14. `GET /getUserDetails` - Fetch specific user details
+15. `GET /getChargingSessionDetails` - Fetch specific user charging session details
+16. `GET /getTransactionDetails` - Fetch specific user wallet deduction and wallet recharge history
+17. `POST /updateUserDetails` - Update user details

@@ -54,7 +54,8 @@ const registerUser = async(req, res, next) => {
             username: registerUsername,
             password: registerPassword,
             phone: registerPhone,
-            walletBalance: 0.00
+            walletBalance: 0.00,
+            roleID: 1
         });
 
         // Continue with any additional logic or response

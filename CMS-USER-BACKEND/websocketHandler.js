@@ -1,25 +1,36 @@
 const logger = require('./logger');
 const { connectToDatabase } = require('./db');
 const { generateRandomTransactionId, SaveChargerStatus, SaveChargerValue, updateTime, handleChargingSession, updateCurrentOrActiveUserToNull } = require('./functions');
+const http = require('http');
 
 connectToDatabase();
 
-const getUniqueIdentifierFromRequest = (request) => {
-    return request.url.split('/').pop();
+const getUniqueIdentifierFromRequest = (request, ws) => {
+    const urlParts = request.url.split('/');
+    const firstPart = urlParts[1];
+    const identifier = urlParts.pop();
+    if (firstPart === 'OCPPJ') {
+        return identifier;
+    } else {
+        ws.terminate(); // or throw new Error('Invalid request');
+        console.log(`Connection terminate due to Invalid header - ${urlParts}`);
+    }
 };
 
-const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, ClientConnections, clients, OCPPResponseMap, meterValuesMap, sessionFlags, charging_states, startedChargingSet) => {
+const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, ClientConnections, clients, OCPPResponseMap, meterValuesMap, sessionFlags, charging_states, startedChargingSet, chargingSessionID) => {
     wss.on('connection', async(ws, req) => {
-        const uniqueIdentifier = getUniqueIdentifierFromRequest(req);
+        const uniqueIdentifier = getUniqueIdentifierFromRequest(req, ws);
         const clientIpAddress = req.connection.remoteAddress;
         let timeoutId;
-        let ChargingSessionID;
+        let GenerateChargingSessionID;
 
+        const previousResults = new Map(); //updateTime - store previous result value
+        const currentVal = new Map(); //updateTime - store current result value
+
+        previousResults.set(uniqueIdentifier, null);
         wsConnections.set(clientIpAddress, ws);
         ClientConnections.add(ws);
         clients.set(ws, clientIpAddress);
-        //sessionFlags.set(uniqueIdentifier, 0);
-        //charging_states.set(uniqueIdentifier, false);
 
         const db = await connectToDatabase();
         let query = { ChargerID: uniqueIdentifier };
@@ -31,20 +42,19 @@ const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, Cli
 
             await db.collection('ev_details')
                 .updateOne(query, updateOperation)
-                .then(result => {
+                .then(async result => {
                     console.log(`ChargerID: ${uniqueIdentifier} - Matched ${result.matchedCount} document(s) and modified ${result.modifiedCount} document(s)`);
                     logger.info(`ChargerID: ${uniqueIdentifier} - Matched ${result.matchedCount} document(s) and modified ${result.modifiedCount} document(s)`);
+                    await db.collection('ev_charger_status').updateOne({ chargerID: uniqueIdentifier }, { $set: { clientIP: clientIpAddress } }, function(err, rslt) {
+                        if (err) throw err;
+                        console.log(`ChargerID: ${uniqueIdentifier} - Matched ${rslt.matchedCount} status document(s) and modified ${rslt.modifiedCount} document(s)`);
+                        logger.info(`ChargerID: ${uniqueIdentifier} - Matched ${rslt.matchedCount} status document(s) and modified ${rslt.modifiedCount} document(s)`);
+                    });
                 })
                 .catch(err => {
                     console.error(`ChargerID: ${uniqueIdentifier} - Error occur while updating in ev_details:`, err);
                     logger.error(`ChargerID: ${uniqueIdentifier} - Error occur while updating in ev_details:`, err);
                 });
-
-            await db.collection('ev_charger_status').updateOne({ chargerID: uniqueIdentifier }, { $set: { clientIP: clientIpAddress } }, function(err, result) {
-                if (err) throw err;
-                console.log(`ChargerID: ${uniqueIdentifier} - Matched ${result.matchedCount} document(s) and modified ${result.modifiedCount} document(s)`);
-                logger.info(`ChargerID: ${uniqueIdentifier} - Matched ${result.matchedCount} document(s) and modified ${result.modifiedCount} document(s)`);
-            });
 
             clients.set(ws, clientIpAddress);
         } else {
@@ -118,7 +128,7 @@ const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, Cli
                         const response = [3, Identifier, {
                             "status": "Accepted",
                             "currentTime": new Date().toISOString(),
-                            "interval": 10
+                            "interval": 14400
                         }];
                         sendTo.send(JSON.stringify(response));
                     } else if (requestType === 2 && requestName === "StatusNotification") {
@@ -146,9 +156,9 @@ const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, Cli
                             timeoutId = setTimeout(async() => {
                                 const result = await updateCurrentOrActiveUserToNull(uniqueIdentifier);
                                 if (result === true) {
-                                    console.log('End charging session is updated successfully.');
+                                    console.log(`ChargerID ${uniqueIdentifier} - End charging session is updated successfully.`);
                                 } else {
-                                    console.log('End charging session is not updated.');
+                                    console.log(`ChargerID ${uniqueIdentifier} - End charging session is not updated.`);
                                 }
                             }, 45000);
                         } else {
@@ -160,34 +170,30 @@ const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, Cli
                         }
 
                         if (status == 'Charging' && !startedChargingSet.has(uniqueIdentifier)) {
-                            //charging_state = true;
-                            //sessionFlag = 1;
                             sessionFlags.set(uniqueIdentifier, 1);
                             charging_states.set(uniqueIdentifier, true);
                             StartTimestamp = timestamp;
                             startedChargingSet.add(uniqueIdentifier);
+                            GenerateChargingSessionID = generateRandomTransactionId();
+                            chargingSessionID.set(uniqueIdentifier, GenerateChargingSessionID);
                         }
                         if ((status == 'Finishing') && (charging_states.get(uniqueIdentifier) == true)) {
-                            //sessionFlag = 1;
                             sessionFlags.set(uniqueIdentifier, 1);
                             StopTimestamp = timestamp;
-                            //charging_state = false;
                             charging_states.set(uniqueIdentifier, false);
                             startedChargingSet.delete(uniqueIdentifier);
                         }
+
                         if ((status == 'SuspendedEV') && (charging_states.get(uniqueIdentifier) == true)) {
-                            //sessionFlag = 1;
                             sessionFlags.set(uniqueIdentifier, 1);
                             StopTimestamp = timestamp;
-                            //charging_state = false;
                             charging_states.set(uniqueIdentifier, false);
                             startedChargingSet.delete(uniqueIdentifier);
                         }
+
                         if ((status == 'Faulted') && (charging_states.get(uniqueIdentifier) == true)) {
-                            //sessionFlag = 1;
                             sessionFlags.set(uniqueIdentifier, 1);
                             StopTimestamp = timestamp;
-                            //charging_state = false;
                             charging_states.set(uniqueIdentifier, false);
                             startedChargingSet.delete(uniqueIdentifier);
                         }
@@ -204,10 +210,20 @@ const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, Cli
                                 console.log("StartMeterValues or LastMeterValues is not available.");
                             }
                             const user = await getUsername(uniqueIdentifier);
-                            ChargingSessionID = generateRandomTransactionId();
                             const startTime = StartTimestamp;
                             const stopTime = StopTimestamp;
-                            handleChargingSession(uniqueIdentifier, startTime, stopTime, unit, sessionPrice, user, ChargingSessionID);
+                            handleChargingSession(uniqueIdentifier, startTime, stopTime, unit, sessionPrice, user, chargingSessionID.get(uniqueIdentifier));
+                            if (charging_states.get(uniqueIdentifier) == false) {
+                                const result = await updateCurrentOrActiveUserToNull(uniqueIdentifier);
+                                if (result === true) {
+                                    console.log(`ChargerID ${uniqueIdentifier} Stop - End charging session is updated successfully.`);
+                                } else {
+                                    console.log(`ChargerID ${uniqueIdentifier} - End charging session is not updated.`);
+                                }
+                            } else {
+                                console.log('End charging session is not updated - while stop only it will work');
+                            }
+
                             sessionFlags.set(uniqueIdentifier, 0);
                         }
 
@@ -215,7 +231,15 @@ const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, Cli
                         const sendTo = wsConnections.get(clientIpAddress);
                         const response = [3, Identifier, { "currentTime": formattedDate }];
                         sendTo.send(JSON.stringify(response));
-                        await updateTime(uniqueIdentifier);
+                        const result = await updateTime(uniqueIdentifier);
+                        currentVal.set(uniqueIdentifier, result);
+                        if (currentVal.get(uniqueIdentifier) === true) {
+                            if (previousResults.get(uniqueIdentifier) === false) {
+                                sendTo.terminate();
+                                console.log(`ChargerID - ${uniqueIdentifier} terminated and try to reconnect !`);
+                            }
+                        }
+                        previousResults.set(uniqueIdentifier, result);
                     } else if (requestType === 2 && requestName === "Authorize") {
                         const sendTo = wsConnections.get(clientIpAddress);
                         const response = [3, Identifier, { "idTagInfo": { "status": "Accepted", "parentIdTag": "B4A63CDB" } }];
@@ -238,7 +262,7 @@ const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, Cli
                                 logger.error(`${uniqueIdentifier}: Error executing while updating transactionId:`, error);
                             });
                     } else if (requestType === 2 && requestName === "MeterValues") {
-                        const UniqueChargingsessionId = ChargingSessionID; // Use the current session ID
+                        const UniqueChargingsessionId = chargingSessionID.get(uniqueIdentifier); // Use the current session ID
                         if (!getMeterValues(uniqueIdentifier).firstMeterValues) {
                             getMeterValues(uniqueIdentifier).firstMeterValues = await captureMetervalues(Identifier, requestData, uniqueIdentifier, clientIpAddress, UniqueChargingsessionId);
                             console.log(`First MeterValues for ${uniqueIdentifier} : ${getMeterValues(uniqueIdentifier).firstMeterValues}`);
@@ -254,7 +278,7 @@ const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, Cli
                 }
             });
 
-            ws.on('close', (code, reason) => {
+            wss.on('close', (code, reason) => {
                 if (code === 1001) {
                     console.error(`ChargerID - ${uniqueIdentifier}: WebSocket connection closed from browser side`);
                     logger.error(`ChargerID - ${uniqueIdentifier}: WebSocket connection closed from browser side`);

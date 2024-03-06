@@ -170,24 +170,59 @@ async function SaveChargerValue(ChargerVal) {
 async function updateTime(Device_ID) {
 
     const db = await connectToDatabase();
+    const evDetailsCollection = db.collection('ev_details');
     const collection = db.collection('ev_charger_status');
+    const unregisteredDevicesCollection = db.collection('UnRegister_Devices');
 
-    const filter = { chargerID: Device_ID };
-    const update = { $set: { timestamp: new Date() } };
+    const deviceExists = await evDetailsCollection.findOne({ ChargerID: Device_ID });
 
-    const result = await collection.updateOne(filter, update);
+    if (deviceExists) {
+        const filter = { chargerID: Device_ID };
+        const update = { $set: { timestamp: new Date() } };
 
-    if (result.modifiedCount === 1) {
-        console.log(`The time for ChargerID ${Device_ID} has been successfully updated.`);
-        logger.info(`The time for ChargerID ${Device_ID} has been successfully updated.`);
+        const result = await collection.updateOne(filter, update);
+
+        if (result.modifiedCount === 1) {
+            console.log(`The time for ChargerID ${Device_ID} has been successfully updated.`);
+            logger.info(`The time for ChargerID ${Device_ID} has been successfully updated.`);
+        } else {
+            console.log(`ChargerID ${Device_ID} not found to update time`);
+            logger.error(`ChargerID ${Device_ID} not found to update time`);
+            const deleteUnRegDev = await unregisteredDevicesCollection.deleteOne({ ChargerID: Device_ID });
+            if (deleteUnRegDev.deletedCount === 1) {
+                console.log(`UnRegisterDevices - ${Device_ID} has been deleted.`);
+            } else {
+                console.log(`Failed to delete UnRegisterDevices - ${Device_ID}.`);
+            }
+        }
+
+        return true;
+
     } else {
-        console.log(`ChargerID ${Device_ID} not found to update time`);
-        logger.error(`ChargerID ${Device_ID} not found to update time`);
+        // Device_ID does not exist in ev_details collection
+        console.log(`ChargerID ${Device_ID} does not exist.`);
+        logger.error(`ChargerID ${Device_ID} does not exist.`);
+
+        const unregisteredDevice = await unregisteredDevicesCollection.findOne({ ChargerID: Device_ID });
+
+        if (unregisteredDevice) {
+            // Device already exists in UnRegister_Devices, update its current time
+            const filter = { ChargerID: Device_ID };
+            const update = { $set: { LastUpdateTime: new Date() } };
+            await unregisteredDevicesCollection.updateOne(filter, update);
+            console.log(`UnRegisterDevices - ${Device_ID} LastUpdateTime Updated.`);
+        } else {
+            // Device does not exist in UnRegister_Devices, insert it with the current time
+            await unregisteredDevicesCollection.insertOne({ ChargerID: Device_ID, LastUpdateTime: new Date() });
+            console.log(`UnRegisterDevices - ${Device_ID} inserted.`);
+        }
+
+        return false;
     }
 }
 
 //insert charging session into the database
-async function handleChargingSession(chargerID, startTime, stopTime, TotalUnitConsumed, price, user, ChargingSessionID) {
+async function handleChargingSession(chargerID, startTime, stopTime, TotalUnitConsumed, price, user, SessionID) {
     const db = await connectToDatabase();
     const collection = db.collection('charging_session');
     const sessionPrice = parseFloat(price).toFixed(2);
@@ -201,7 +236,7 @@ async function handleChargingSession(chargerID, startTime, stopTime, TotalUnitCo
         // ChargerID exists in charging_session table
         if (existingDocument.StopTimestamp === null) {
             // StopTimestamp is null, update the existing document's StopTimestamp
-            const result = await collection.updateOne({ ChargerID: chargerID, StopTimestamp: null }, {
+            const result = await collection.updateOne({ ChargerID: chargerID, ChargingSessionID: SessionID, StopTimestamp: null }, {
                 $set: {
                     StopTimestamp: stopTime !== null ? stopTime : undefined,
                     Unitconsumed: TotalUnitConsumed,
@@ -227,7 +262,7 @@ async function handleChargingSession(chargerID, startTime, stopTime, TotalUnitCo
 
             const newSession = {
                 ChargerID: chargerID,
-                ChargingSessionID: ChargingSessionID,
+                ChargingSessionID: SessionID,
                 StartTimestamp: startTime !== null ? startTime : undefined,
                 StopTimestamp: stopTime !== null ? stopTime : undefined,
                 Unitconsumed: TotalUnitConsumed,
@@ -253,7 +288,7 @@ async function handleChargingSession(chargerID, startTime, stopTime, TotalUnitCo
         if (evDetailsDocument) {
             const newSession = {
                 ChargerID: chargerID,
-                ChargingSessionID: ChargingSessionID,
+                ChargingSessionID: SessionID,
                 StartTimestamp: startTime !== null ? startTime : undefined,
                 StopTimestamp: stopTime !== null ? stopTime : undefined,
                 Unitconsumed: TotalUnitConsumed,

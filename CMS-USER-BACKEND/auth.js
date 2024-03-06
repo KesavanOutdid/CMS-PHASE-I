@@ -16,7 +16,7 @@ const authenticate = async(req, res, next) => {
 
         const user = await usersCollection.findOne({ username: email });
 
-        if (!user || user.password !== password) {
+        if (!user || user.password !== password || user.roleID !== 1) {
             const errorMessage = 'Invalid credentials';
             return res.status(401).json({ message: errorMessage });
         }

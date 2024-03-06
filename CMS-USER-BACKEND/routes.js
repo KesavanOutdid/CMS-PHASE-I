@@ -101,7 +101,7 @@ router.get('/endChargingSession', async(req, res) => {
 
             res.status(200).json({ message: 'End Charging session updated successfully.' });
         } else {
-            console.log("endChargingSession - Status is not in Available");
+            console.log("endChargingSession - Status is not in Available/Faulted/Finishing");
             res.status(200).json({ message: 'OK' });
         }
 
@@ -114,10 +114,10 @@ router.get('/endChargingSession', async(req, res) => {
 
 //Route to Check charger ID from database
 router.post('/SearchCharger', async(req, res) => {
-    const ChargerID = req.body.searchChargerID;
-    const user = req.body.Username;
-
     try {
+        const ChargerID = req.body.searchChargerID;
+        const user = req.body.Username;
+        
         const db = await database.connectToDatabase();
         const evDetailsCollection = db.collection('ev_details');
         const usersCollection = db.collection('users');

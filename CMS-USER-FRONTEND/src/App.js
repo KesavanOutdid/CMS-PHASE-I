@@ -5,6 +5,7 @@ import Register from './components/Register';
 import Home from './pages/Home';
 import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentUnsuccess from './pages/PaymentUnsuccess';  
+import Configuration from './pages/OCPP/Config';
 
 const App = () => {
   const storedUser = JSON.parse(sessionStorage.getItem('user'));
@@ -50,6 +51,12 @@ const App = () => {
           <Redirect to="/" />
         )}
       </Route>
+
+      {/* OCPP route */}
+      <Route path="/OCPP">
+        <Configuration userInfo={userInfo} handleLogout={handleLogout} />
+      </Route>
+
 
       {/* Redirect to PaymentSuccess if logged in, otherwise show Login */}
       <Route path="/PaymentSuccess">

@@ -24,6 +24,7 @@
         "react-router-dom": "^5.2.0",
         "react-syntax-highlighter": "^15.4.4",
         "save-dev": "*",
+        "sweetalert2": "^11.10.6",
         "web-vitals": "^1.1.2"
     },
     "devDependencies": {

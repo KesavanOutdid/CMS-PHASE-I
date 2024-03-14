@@ -454,3 +454,29 @@
 font-size: 26px;
 padding: 0px 10px 0px 10px;
 }
+
+.oc{
+  color: #5ae753d2;
+}
+
+.start{
+  border-radius: 20px 0 0 20px !important;
+
+}
+.btn-send {
+  border-radius: 0 20px 20px 0 !important;
+  background-color: #5ae753d2 !important;
+}
+
+.oc{
+  color: #5ae753d2;
+}
+
+.start{
+  border-radius: 20px 0 0 20px !important;
+
+}
+.btn-send {
+  border-radius: 0 20px 20px 0 !important;
+  background-color: #5ae753d2 !important;
+}

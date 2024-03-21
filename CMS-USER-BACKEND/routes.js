@@ -90,7 +90,7 @@ router.get('/endChargingSession', async(req, res) => {
         const collection = db.collection('ev_details');
         const chargerStatus = await db.collection('ev_charger_status').findOne({ chargerID: ChargerID });
 
-        if (chargerStatus.status === 'Available' || chargerStatus.status === 'Faulted' || chargerStatus.status === 'Finishing') {
+        if (chargerStatus.status === 'Available' || chargerStatus.status === 'Faulted' || chargerStatus.status === 'Finishing' || chargerStatus.status === 'Unavailable') {
 
             const result = await collection.updateOne({ ChargerID: ChargerID }, { $set: { current_or_active_user: null } });
 
@@ -101,7 +101,7 @@ router.get('/endChargingSession', async(req, res) => {
 
             res.status(200).json({ message: 'End Charging session updated successfully.' });
         } else {
-            console.log("endChargingSession - Status is not in Available/Faulted/Finishing");
+            console.log("endChargingSession - Status is not in Available/Faulted/Finishing/Unavailable");
             res.status(200).json({ message: 'OK' });
         }
 
@@ -147,10 +147,17 @@ router.post('/SearchCharger', async(req, res) => {
 
         const walletBalance = userRecord.walletBalance;
 
-        // Check if wallet balance is below 100 Rs
-        if (walletBalance < 100) {
-            const errorMessage = 'Your wallet balance is not enough to charge (minimum 100 Rs required)';
-            return res.status(400).json({ message: errorMessage });
+        if(chargerDetails.infrastructure === 1){
+            if(chargerDetails.AssignedUser !== user){            
+                const errorMessage = 'Access Denied: You do not have permission to use this private charger.';
+                return res.status(400).json({ message: errorMessage });
+            }
+        }else{
+            // Check if wallet balance is below 100 Rs
+            if (walletBalance < 100) {
+                const errorMessage = 'Your wallet balance is not enough to charge (minimum 100 Rs required)';
+                return res.status(400).json({ message: errorMessage });
+            }
         }
 
         // Update the user field in the chargerDetails
@@ -644,6 +651,33 @@ router.get('/SendOCPPRequest', async(req, res) => {
         console.log('OCPP Request client not found for the specified device ID:', deviceIDToSendTo);
         logger.info('OCPP Request client not found for the specified device ID:', deviceIDToSendTo);
         res.status(404).end('OCPP Request client not found for the specified device ID: ' + deviceIDToSendTo);
+    }
+});
+
+router.get('/getRecentSessionDetails', async function(req, res) {
+    try {
+        const user = req.query.username;
+        if (!user) {
+            const errorMessage = 'ChargerSessionDetails - Username undefined!';
+            return res.status(401).json({ message: errorMessage });
+        }
+        const db = await database.connectToDatabase();
+        const Collection = db.collection('charging_session');
+        
+        // Fetch all charging sessions for the user
+        const result = await Collection.find({ user: user, StopTimestamp: { $ne: null } }).sort({ StopTimestamp: -1 }).toArray();
+        if (!result || result.length === 0) {
+            const errorMessage = 'ChargerSessionDetails - No record found!';
+            return res.status(404).json({ message: errorMessage });
+        }
+        
+        // Extract unique charger IDs
+        const chargerIDs = [...new Set(result.map(session => session.ChargerID))];
+
+        return res.status(200).json({ value: chargerIDs });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: 'Internal Server Error' });
     }
 });
 

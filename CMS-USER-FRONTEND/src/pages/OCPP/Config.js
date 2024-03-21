@@ -8,12 +8,12 @@ const Configuration = ({ handleLogout }) => {
     const [chargerId, setChargerId] = useState("");
     const [commandsLibrary, setCommandsLibrary] = useState([]);
     const [selectedCommand, setSelectedCommand] = useState("");
-    const [payload, setPayload] = useState();
+    const [payload, setPayload] = useState('');
     const [response, setResponse] = useState();
 
     function RegError(Message){
         Swal.fire({
-            title: "Failed", 
+            title: "Sending failed", 
             text: Message,
             icon: "error",
             customClass: {
@@ -61,26 +61,27 @@ const Configuration = ({ handleLogout }) => {
             console.log("payload", payload.key);
             console.log("selectedCommand", selectedCommand);
     
+            const response = await axios.get(`/SendOCPPRequest?id=${chargerId}&req=${encodeURIComponent(JSON.stringify(payload))}&actionBtn=${selectedCommand}`);
+            const responseData = await response.data;
+            setResponse(responseData, null, " ");
+    
             // Show SweetAlert
             Swal.fire({
                 title: 'Loading',
                 html: 'Waiting for command response...',
-                didOpen: async() => {
+                didOpen: () => {
                     Swal.showLoading();
-
-                    const response = await axios.get(`/SendOCPPRequest?id=${chargerId}&req=${encodeURIComponent(JSON.stringify(payload))}&actionBtn=${selectedCommand}`);
-                    const responseData = await response.data;
-                    setResponse(responseData, null, " ");
-
                     // Close the SweetAlert when response is received
                     if (responseData) {
-                        Swal.fire({
-                            position: 'center',
-                            icon: 'success',
-                            title: 'Command Response Received successfully',
-                            showConfirmButton: false,
-                            timer: 1500
-                        });
+                        setTimeout(() => {
+                            Swal.fire({
+                                position: 'center',
+                                icon: 'success',
+                                title: 'Command Response Received successfully',
+                                showConfirmButton: false,
+                                timer: 1500
+                            });
+                        }, 1000); // Delayed to simulate response time
                     }
                 }
             });
@@ -89,7 +90,11 @@ const Configuration = ({ handleLogout }) => {
             alert('An error occurred while sending the command.');
         }
     };
-    
+
+    // Function to handle changes in the payload textarea
+    const handlePayloadChange = (event) => {
+      setPayload(JSON.parse(event.target.value));
+    };
     const handleChargerIdChange = (event) => {
         setChargerId(event.target.value);
     };
@@ -158,7 +163,7 @@ const Configuration = ({ handleLogout }) => {
                                 </div>
                             </div>
                             <div className="col-sm-6 mt-3">
-                                <div className="card" style={{ height: "330px" }}>
+                                <div className="card mt-5" style={{ height: "300px" }}>
                                     <div className="card-header">
                                         <ul className="nav nav-tabs card-header-tabs">
                                             <li className="nav-item">
@@ -167,10 +172,23 @@ const Configuration = ({ handleLogout }) => {
                                         </ul>
                                     </div>
                                     <div className="card-body overflow-auto">
-                                        <pre id="payload">{payload ? JSON.stringify(payload, null, 2) : ""}</pre>
+                                        <textarea
+                                            value={payload ? JSON.stringify(payload, null, 2) : ""}
+                                            style={{
+                                                width: '100%',
+                                                minHeight: '200px',
+                                                border: '0px solid white',
+                                                borderRadius: '5px',
+                                                padding: '10px',
+                                                resize: 'none', 
+                                                fontFamily: 'monospace',
+                                            }}
+                                            onChange={handlePayloadChange}>
+                                        </textarea>
                                     </div>
+
                                 </div>
-                                <div className="card mt-4" style={{ height: "330px" }}>
+                                <div className="card mt-4 " style={{ height: "300px" }}>
                                     <div className="card-header">
                                         <ul className="nav nav-tabs card-header-tabs">
                                             <li className="nav-item">

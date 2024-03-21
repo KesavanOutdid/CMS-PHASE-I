@@ -1215,7 +1215,7 @@ const Home = ({ userInfo, handleLogout }) => {
                             ))
                           ) : (
                             <tr>
-                              <td colSpan="4" className="text-center" style={{ marginTop: '50px'}}>No devices found.</td>
+                              <td colSpan="5" className="text-center" style={{ marginTop: '50px'}}>No devices found.</td>
                             </tr>
                           )
                         )}

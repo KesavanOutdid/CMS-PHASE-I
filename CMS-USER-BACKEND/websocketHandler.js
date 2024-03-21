@@ -1,7 +1,6 @@
 const logger = require('./logger');
 const { connectToDatabase } = require('./db');
 const { generateRandomTransactionId, SaveChargerStatus, SaveChargerValue, updateTime, handleChargingSession, updateCurrentOrActiveUserToNull } = require('./functions');
-const http = require('http');
 
 connectToDatabase();
 
@@ -23,6 +22,9 @@ const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, Cli
         const clientIpAddress = req.connection.remoteAddress;
         let timeoutId;
         let GenerateChargingSessionID;
+        let StartTimestamp;
+        let StopTimestamp;
+        let timestamp;
 
         const previousResults = new Map(); //updateTime - store previous result value
         const currentVal = new Map(); //updateTime - store current result value
@@ -138,7 +140,8 @@ const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, Cli
 
                         const status = requestData[3].status;
                         const errorCode = requestData[3].errorCode;
-                        const timestamp = requestData[3].timestamp;
+                        timestamp = requestData[3].timestamp;
+
                         if (status != undefined) {
                             const keyValPair = {};
                             keyValPair.status = status;
@@ -150,8 +153,6 @@ const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, Cli
                             await SaveChargerStatus(Chargerstatus);
                         }
 
-                        let StartTimestamp;
-                        let StopTimestamp;
                         if (status == 'Available') {
                             timeoutId = setTimeout(async() => {
                                 const result = await updateCurrentOrActiveUserToNull(uniqueIdentifier);
@@ -167,6 +168,11 @@ const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, Cli
                                 clearTimeout(timeoutId);
                                 timeoutId = undefined; // Reset the timeout reference
                             }
+                        }
+
+                        if(status == 'Preparing'){
+                            sessionFlags.set(uniqueIdentifier, 0);
+                            charging_states.set(uniqueIdentifier, false);
                         }
 
                         if (status == 'Charging' && !startedChargingSet.has(uniqueIdentifier)) {
@@ -203,7 +209,7 @@ const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, Cli
                             let sessionPrice;
                             const meterValues = getMeterValues(uniqueIdentifier);
                             if (meterValues.firstMeterValues && meterValues.lastMeterValues) {
-                                ({ unit, sessionPrice } = await calculateDifference(meterValues.firstMeterValues, meterValues.lastMeterValues));
+                                ({ unit, sessionPrice } = await calculateDifference(meterValues.firstMeterValues, meterValues.lastMeterValues,uniqueIdentifier));
                                 console.log(`Energy consumed during charging session: ${unit} Unit's - Price: ${sessionPrice}`);
                                 meterValues.firstMeterValues = undefined;
                             } else {
@@ -211,7 +217,7 @@ const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, Cli
                             }
                             const user = await getUsername(uniqueIdentifier);
                             const startTime = StartTimestamp;
-                            const stopTime = StopTimestamp;
+                            const stopTime = StopTimestamp;                            
                             handleChargingSession(uniqueIdentifier, startTime, stopTime, unit, sessionPrice, user, chargingSessionID.get(uniqueIdentifier));
                             if (charging_states.get(uniqueIdentifier) == false) {
                                 const result = await updateCurrentOrActiveUserToNull(uniqueIdentifier);
@@ -274,7 +280,43 @@ const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, Cli
                         const sendTo = wsConnections.get(clientIpAddress);
                         const response = [3, Identifier, {}];
                         sendTo.send(JSON.stringify(response));
+                        
+                        // if ((charging_states.get(uniqueIdentifier) == true)) {
+                        //     sessionFlags.set(uniqueIdentifier, 1);
+                        //     StopTimestamp = timestamp;
+                        //     charging_states.set(uniqueIdentifier, false);
+                        //     startedChargingSet.delete(uniqueIdentifier);
+                        // }
                     }
+
+                    // if (sessionFlags.get(uniqueIdentifier) == 1) {
+                    //     let unit;
+                    //     let sessionPrice;
+                    //     const meterValues = getMeterValues(uniqueIdentifier);
+                    //     if (meterValues.firstMeterValues && meterValues.lastMeterValues) {
+                    //         ({ unit, sessionPrice } = await calculateDifference(meterValues.firstMeterValues, meterValues.lastMeterValues));
+                    //         console.log(`Energy consumed during charging session: ${unit} Unit's - Price: ${sessionPrice}`);
+                    //         meterValues.firstMeterValues = undefined;
+                    //     } else {
+                    //         console.log("StartMeterValues or LastMeterValues is not available.");
+                    //     }
+                    //     const user = await getUsername(uniqueIdentifier);
+                    //     const startTime = StartTimestamp;
+                    //     const stopTime = StopTimestamp;
+                    //     handleChargingSession(uniqueIdentifier, startTime, stopTime, unit, sessionPrice, user, chargingSessionID.get(uniqueIdentifier));
+                    //     if (charging_states.get(uniqueIdentifier) == false) {
+                    //         const result = await updateCurrentOrActiveUserToNull(uniqueIdentifier);
+                    //         if (result === true) {
+                    //             console.log(`ChargerID ${uniqueIdentifier} Stop - End charging session is updated successfully.`);
+                    //         } else {
+                    //             console.log(`ChargerID ${uniqueIdentifier} - End charging session is not updated.`);
+                    //         }
+                    //     } else {
+                    //         console.log('End charging session is not updated - while stop only it will work');
+                    //     }
+
+                    //     sessionFlags.set(uniqueIdentifier, 0);
+                    // }
                 }
             });
 
@@ -375,18 +417,25 @@ const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, Cli
         }
 
         // Function to calculate the difference between two sets of MeterValues
-        async function calculateDifference(startValues, lastValues) {
+        async function calculateDifference(startValues, lastValues,uniqueIdentifier) {
             const startEnergy = startValues || 0;
             const lastEnergy = lastValues || 0;
             console.log(startEnergy, lastEnergy);
             const differ = lastEnergy - startEnergy;
-            const unit = parseFloat(differ / 1000).toFixed(3);
+            let calculatedUnit = parseFloat(differ / 1000).toFixed(3);
+            let unit;
+            if (calculatedUnit === null || isNaN(parseFloat(calculatedUnit))) {
+                unit = 0;
+            } else {
+                unit = calculatedUnit;
+            }
             console.log(`Unit: ${unit}`);
-            const sessionPrice = await calculatePrice(unit);
-            return { unit, sessionPrice };
+            const sessionPrice = await calculatePrice(unit, uniqueIdentifier);
+            const formattedSessionPrice = isNaN(sessionPrice) || sessionPrice === 'NaN' ? 0 : parseFloat(sessionPrice).toFixed(2);
+            return { unit, sessionPrice: formattedSessionPrice };
         }
 
-        async function calculatePrice(unit) {
+        async function calculatePrice(unit,uniqueIdentifier) {
             try {
                 // Fetch the price from MongoDB (replace 'YourCollection' and 'yourQuery' with your actual collection and query)
                 const db = await connectToDatabase();
@@ -399,12 +448,34 @@ const handleWebSocketConnection = (WebSocket, wss, ClientWss, wsConnections, Cli
                     console.log(`Price per unit: RS.${pricePerUnit}`);
                     console.log(`Total price: RS.${totalPrice}`);
 
-                    return totalPrice;
+                    const InfraCheck = await CheckInfraANDuser(uniqueIdentifier);
+                    if(InfraCheck === 1){
+                        return totalPrice;
+                    }else{
+                        return 0;
+                    }
                 } else {
                     console.error('Price not found in the database');
                 }
             } catch (error) {
                 console.error('Error in calculatePrice:', error);
+            }
+        }
+
+        async function CheckInfraANDuser(ChargerID){
+            try{
+                const db = await connectToDatabase();
+                const evDetailsCollection = db.collection('ev_details');
+
+                const chargerDetails = await evDetailsCollection.findOne({ ChargerID: ChargerID });
+
+                if(chargerDetails.infrastructure === 1){
+                    return 0;
+                }else{
+                   return 1;
+                }
+            }catch(error){
+                console.error('Error in CheckInfraANDuser:', error);
             }
         }
 

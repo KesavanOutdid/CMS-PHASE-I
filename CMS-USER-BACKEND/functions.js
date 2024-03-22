@@ -228,11 +228,11 @@ async function handleChargingSession(chargerID, startTime, stopTime, Unitconsume
     let TotalUnitConsumed;
 
     if (Unitconsumed === null || isNaN(parseFloat(Unitconsumed))) {
-        TotalUnitConsumed = 0;
+        TotalUnitConsumed = "0.000";
     } else {
         TotalUnitConsumed = Unitconsumed;
     }
-    const sessionPrice = isNaN(Totalprice) || Totalprice === 'NaN' ? 0 : parseFloat(Totalprice).toFixed(2);
+    const sessionPrice = isNaN(Totalprice) || Totalprice === 'NaN' ? "0.00" : parseFloat(Totalprice).toFixed(2);
     // const sessionPrice = parseFloat(price).toFixed(2);
 
     // Check if a document with the same chargerID already exists in the charging_session table
